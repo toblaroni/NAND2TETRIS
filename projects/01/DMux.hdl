@@ -7,10 +7,14 @@
  * [a, b] = [in, 0] if sel == 0
  *          [0, in] if sel == 1
  *
+ */
 CHIP DMux {
     IN in, sel;
     OUT a, b;
 
     PARTS:
-    //// Replace this comment with your code.
+    And (a=sel, b=in, out=b);
+
+    Not (in=sel, out=Notsel);
+    And (a=Notsel, b=in, out=a);
 }
