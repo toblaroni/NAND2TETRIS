@@ -16,5 +16,38 @@ CHIP Mux8Way16 {
     OUT out[16];
 
     PARTS:
-    //// Replace this comment with your code.
+    Not (in=sel[0], out=Notsel0);  // Do this now to use as env variables almost
+    Not (in=sel[1], out=Notsel1);
+    Not (in=sel[2], out=Notsel2);
+
+    // A + B
+    Mux16 (a=a, b=b, sel=sel[0], out=mux1out);
+
+    // C
+    And (a=sel[1], b=Notsel0, out=Notsel1Andsel0);
+    And (a=Notsel2, b=Notsel1Andsel0, out=mux2sel);
+    Mux16 (a=mux1out, b=c, sel=mux2sel, out=mux2out);
+
+    // D
+    And (a=Notsel2, b=sel[1], out=Notsel2Andsel1);
+    And (a=Notsel2Andsel1, b=sel[0], out=mux3sel);
+    Mux16 (a=mux2out, b=d, sel=mux3sel, out=mux3out);
+
+    // E
+    And (a=sel[2], b=Notsel1, out=sel2AndNotsel1);
+    And (a=sel2AndNotsel1, b=Notsel0, out=mux4sel);
+    Mux16 (a=mux3out, b=e, sel=mux4sel, out=mux4out);
+
+    // F
+    And (a=sel2AndNotsel1, b=sel[0], out=mux5sel);
+    Mux16 (a=mux4out, b=f, sel=mux5sel, out=mux5out);
+
+    // G
+    And (a=sel[2], b=sel[1], out=sel2Andsel1);
+    And (a=sel2Andsel1, b=Notsel0, out=mux6sel);
+    Mux16 (a=mux5out, b=g, sel=mux6sel, out=mux6out);
+
+    // H
+    And (a=sel2Andsel1, b=sel[0], out=mux7sel);
+    Mux16 (a=mux6out, b=h, sel=mux7sel, out=out);
 }
