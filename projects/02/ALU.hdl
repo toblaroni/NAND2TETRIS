@@ -41,5 +41,41 @@ CHIP ALU {
         ng;      // if (out < 0)  equals 1, else 0
 
     PARTS:
-    //// Replace this comment with your code.
+    // --- Basic Functions ---
+    // PRECOMPUTING X
+    // zx
+    And16 (a=x, b=false, out=zero16);
+    Mux16 (a=x, b=zero16, sel=zx, out=xafterzx);
+    // nx
+    Not16 (in=xafterzx, out=notxafterzx);
+    Mux16 (a=xafterzx, b=notxafterzx, sel=nx, out=xafternx);
+
+    // PRECOMPUTING Y
+    // zy
+    Mux16 (a=y, b=zero16, sel=zy, out=yafterzy);
+    // ny
+    Not16 (in=yafterzy, out=notyafterzy);
+    Mux16 (a=yafterzy, b=notyafterzy, sel=ny, out=yafterny);
+
+    // ARITHMETIC OR LOGICAL OPERATION (f)
+    And16 (a=xafternx, b=yafterny, out=xAndy);
+    Add16 (a=xafternx, b=yafterny, out=xPlusy);
+    Mux16 (a=xAndy, b=xPlusy, sel=f, out=resafterf);
+
+    // NEGATE OUTPUT (no)
+    Not16 (in=resafterf, out=notresafterf);
+    Mux16 (a=resafterf, b=notresafterf, sel=no, out[15]=msb, out[0..7]=bottomout, out[8..15]=topout, out=out);
+
+
+    // --- zr and ng ---
+    // zr
+    Or8Way (in=bottomout, out=checktop);
+    Or8Way (in=topout, out=checkbottom);
+    Or (a=checkbottom, b=checktop, out=contains1);  // Will be 1 if out contains a 1
+    Not (in=contains1, out=zr);
+
+    // ng
+    // If the most significant bit is 1 you know it's negative...
+    And (a=msb, b=true, out=ng);
+
 }
