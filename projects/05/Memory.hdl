@@ -19,5 +19,22 @@ CHIP Memory {
     OUT out[16];
 
     PARTS:
-    //// Replace this comment with your code.
+    Or (a=address[14], b=address[13], out=addr14Oraddr13);
+    Or (a=addr14Oraddr13, b=address[12], out=addr14Oraddr13Oraddr12);
+
+    Not (in=addr14Oraddr13Oraddr12, out=Notaddr14Oraddr13Oraddr12);
+
+    And (a=Notaddr14Oraddr13Oraddr12, b=load, out=loadram16);
+    And (a=addr14Oraddr13Oraddr12, b=load, out=loadscreen);
+
+    RAM16K (in=in, load=loadram16, address=address[0..13], out=ram16out);
+    Screen (in=in, load=loadscreen, address=address[1..13], out=screenout);
+
+    Mux16 (a=ram16out, b=screenout, sel=addr14Oraddr13Oraddr12, out=ramOrscreen);
+
+    Keyboard (out=KBDout);
+
+    And (a=address[14], b=address[13], out=addr14Andaddr13);
+
+    Mux16 (a=ramOrscreen, b=KBDout, sel=addr14Andaddr13, out=out);
 }
