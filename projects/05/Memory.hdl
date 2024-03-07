@@ -20,7 +20,8 @@ CHIP Memory {
 
     PARTS:
     // Which part are we trying to access based on most significant bits
-    DMux4Way(in=load, sel=address[13..14], a=loadRam, c=loadScreen);
+    DMux(in=load, sel=address[14], a=loadRam, b=loadPeripherals);
+    DMux(in=loadPeripherals, sel=address[13], a=loadScreen);
 
     // -- Ram --
     RAM16K (in=in, load=loadRam, address=address[0..13], out=ramOut);
@@ -31,6 +32,7 @@ CHIP Memory {
     Keyboard (out=kbdOut);
 
     // Which one to output
-    Mux4Way16 (a=ramOut, b=screenOut, c=screenOut, d=kbdOut, sel=address[13..14], out=out);
+    Mux16 (a=screenOut, b=kbdOut, sel=address[13], out=peripheralsOut);
+    Mux16 (a=ramOut, b=peripheralsOut, sel=address[14], out=out);
 
 }
