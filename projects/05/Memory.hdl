@@ -19,22 +19,18 @@ CHIP Memory {
     OUT out[16];
 
     PARTS:
-    Or (a=address[14], b=address[13], out=addr14Oraddr13);
-    Or (a=addr14Oraddr13, b=address[12], out=addr14Oraddr13Oraddr12);
+    // Which part are we trying to access based on most significant bits
+    DMux4Way(in=load, sel=address[13..14], a=loadRam, c=loadScreen);
 
-    Not (in=addr14Oraddr13Oraddr12, out=Notaddr14Oraddr13Oraddr12);
+    // -- Ram --
+    RAM16K (in=in, load=loadRam, address=address[0..13], out=ramOut);
 
-    And (a=Notaddr14Oraddr13Oraddr12, b=load, out=loadram16);
-    And (a=addr14Oraddr13Oraddr12, b=load, out=loadscreen);
+    Screen (in=in, load=loadScreen, address=address[0..12], out=screenOut);
 
-    RAM16K (in=in, load=loadram16, address=address[0..13], out=ram16out);
-    Screen (in=in, load=loadscreen, address=address[1..13], out=screenout);
+    // -- Keyboard --
+    Keyboard (out=kbdOut);
 
-    Mux16 (a=ram16out, b=screenout, sel=addr14Oraddr13Oraddr12, out=ramOrscreen);
+    // Which one to output
+    Mux4Way16 (a=ramOut, b=screenOut, c=screenOut, d=kbdOut, sel=address[13..14], out=out);
 
-    Keyboard (out=KBDout);
-
-    And (a=address[14], b=address[13], out=addr14Andaddr13);
-
-    Mux16 (a=ramOrscreen, b=KBDout, sel=addr14Andaddr13, out=out);
 }
