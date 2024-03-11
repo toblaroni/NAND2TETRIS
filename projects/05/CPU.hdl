@@ -32,5 +32,21 @@ CHIP CPU {
         pc[15];          // Address of next instruction
 
     PARTS:
-    //// Replace this comment with your code.
+    // --- Decoding Instruction ---
+    // -- C Instruction -- 
+    // - Loading the A register -
+    // If instruction[5] == 1 and opcode == 1we want to load the A register
+    And (a=instruction[5], b=instruction[15], out=d1Andopcode);
+
+    // If opcode is 0 then we want to load A register
+    Not (in=instruction[15], out=notOpcode);
+    
+    Or (a=d1Andopcode, b=notOpcode, out=loadARegister);
+
+    // A Register input
+    Mux16 (a=instruction, b=ALUOut, sel=ARegisterInSel, out=ARegisterIn);
+    ARegister (in=ARegisterIn, load=loadARegister, out=);
+
+    // --- ALU ---    
+    ALU (x=, y=, zx=, nx=, zy=, ny=, f=, no=, out=ALUOut, zr=, ng=);
 }
