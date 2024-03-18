@@ -1,31 +1,47 @@
+use std::process;
+
 enum LineType {
     CInstruction,
     AInstruction,
     Comment
 }
 
-struct Instruction {
-    line_type: LineType,
+pub struct Instruction {
+    pub line_type: LineType,
 
-    dest: Option<String>,  
-    comp: Option<String>,
-    jump: Option<String>, 
+    // C-Instruction
+    pub dest: Option<String>,  
+    pub comp: Option<String>,
+    pub jump: Option<String>, 
 
-    value: Option<u32>
+    // a-Instruction
+    pub value: Option<u32>
 }
 
 
 fn get_a_instruction(line: String) -> Instruction {
-    let value: u32 = &line[1..];
+    let value: u32 = line[1..].parse().expect("Bad a instruction value");
+    println!("Value {}", &value);
 
     return Instruction {
         line_type: LineType::AInstruction,
             dest: None,
             comp: None,
             jump: None,
-            value: value
+            value: Some(value)
     }
 }
+
+
+fn get_c_instruction(line: String) -> Instruction {
+    let parts: Vec<&str> = line.split('=').flat_map(|x| x.split(';')).collect();
+
+    match parts.len() {
+        3 => {
+        }
+    }
+}
+
 
 pub fn parse(line: String) -> Instruction {
     // We need to Separate 'line' depending on the type of instruction it is.
@@ -43,7 +59,6 @@ pub fn parse(line: String) -> Instruction {
         return get_a_instruction(line);
     }
     
-    // Loop through the line
-    
+    get_c_instruction(line)
 }
 
