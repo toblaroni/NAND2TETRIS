@@ -1,18 +1,28 @@
-use std::env;
-use std::path;
-use std::process;
+use std:: {
+    env,
+    process
+};
 
-fn assemble(source_file: string) {
-
-}
+mod assembler;
+mod parser;
 
 fn main() {
     let args: Vec<String> = env::args().collect();    
 
-    if args[1..].len() != 1 {
-        println!("Please specify an assembly file to assemble...");
-        process::exit(-1);
+    match args.len() {
+        1 => {
+            println!("Please specify a source file to be assembled");
+            process::exit(-1);
+        }
+
+        n if n > 2 => {
+            println!("Too many arguments provided. Expected only 1.");
+            process::exit(-1);
+        }
+
+        _ => {
+            println!("Assembling {}", args[1]);
+            assembler::assemble(&args[1]);
+        }
     }
-
-
 }
