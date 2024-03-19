@@ -59,7 +59,10 @@ fn build_instruction(line_type: Option<LineType>,
 }
 
 fn get_a_instruction(line: String) -> Instruction {
-    let value: u32 = line[1..].parse().expect("Bad a instruction value");
+    let value: u32 = line[1..]
+                    .trim()
+                    .parse()
+                    .expect("Bad a instruction value");
 
     return Instruction {
         line_type: Some(LineType::AInstruction),
@@ -76,7 +79,7 @@ fn get_c_instruction(line: String) -> Instruction {
     let line = if let Some(index) = line.find("//") {
         &line[..index]
     } else {
-        &line[..]
+        &line[..].trim()
     };
 
     if line.contains('=') && line.contains(';') {
