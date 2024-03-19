@@ -21,8 +21,11 @@ fn main() {
         }
 
         _ => {
-            println!("Assembling {}", args[1]);
-            assembler::assemble(&args[1]);
+            println!("Assembling {}", &args[1]);
+            match assembler::assemble(&args[1]) {
+                Ok(()) => println!("Successfully assembled source file {}", args[1]),
+                Err(e) => println!("Error while assembling source file {}: {}", args[1], e)
+            }
         }
     }
 }
