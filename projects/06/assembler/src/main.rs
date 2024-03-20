@@ -5,6 +5,7 @@ use std:: {
 
 mod assembler;
 mod parser;
+mod translator;
 
 fn main() {
     let args: Vec<String> = env::args().collect();    

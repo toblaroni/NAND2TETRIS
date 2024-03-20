@@ -59,6 +59,13 @@ fn build_instruction(line_type: Option<LineType>,
 }
 
 fn get_a_instruction(line: String) -> Instruction {
+    // Remove inline comments
+    let line = if let Some(index) = line.find("//") {
+        &line[..index]
+    } else {
+        &line[..].trim()
+    };
+
     let value: u32 = line[1..]
                     .trim()
                     .parse()
@@ -109,7 +116,7 @@ fn get_c_instruction(line: String) -> Instruction {
 }
 
 
-pub fn parse(line: String) -> Instruction {
+pub fn parse_line(line: String) -> Instruction {
     // We need to Separate 'line' depending on the type of instruction it is.
     if line.starts_with("//") || line.is_empty() {
         return Instruction {
