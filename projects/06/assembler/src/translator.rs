@@ -1,11 +1,6 @@
-
 use std::process;
 
 use crate::parser::{Instruction, LineType};
-
-
-
-
 fn translate_a_instruction(ins: Instruction) -> String {
     match ins.value {
         Some(uint) => {
@@ -18,7 +13,18 @@ fn translate_a_instruction(ins: Instruction) -> String {
     }
 }
 
+
+
 fn translate_c_instruction(ins: Instruction) -> String {
+    let mut code = String::from("111");
+
+    match ins.dest {
+        None => code.push_str("000"),
+        Some(_) => {
+            println!("Something");
+        }
+    };
+
     String::new()
 }
 
