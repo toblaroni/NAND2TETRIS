@@ -71,7 +71,7 @@ fn get_a_instruction(line: String) -> Instruction {
                     .parse()
                     .expect("Bad a instruction value");
 
-    return Instruction {
+    Instruction {
         line_type: Some(LineType::AInstruction),
         dest: None,
         comp: None,

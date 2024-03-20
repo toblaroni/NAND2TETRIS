@@ -12,9 +12,10 @@ pub fn assemble(source_file: &String) -> Result<(), std::io::Error> {
         let line = line?;
         let ins: Instruction = parse_line(line);
 
-        if let None = ins.line_type {
+        if ins.line_type.is_none() {
             continue;
         }
+
         println!("{}", ins);
         let code: String = translate_instruction(ins);
         println!("{}\n", code);
