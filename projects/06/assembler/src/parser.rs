@@ -61,9 +61,9 @@ fn build_instruction(line_type: Option<LineType>,
 fn get_a_instruction(line: String) -> Instruction {
     // Remove inline comments
     let line = if let Some(index) = line.find("//") {
-        &line[..index]
+        line[..index].trim()
     } else {
-        &line[..].trim()
+        line[..].trim()
     };
 
     let value: u32 = line[1..]
@@ -84,9 +84,9 @@ fn get_a_instruction(line: String) -> Instruction {
 fn get_c_instruction(line: String) -> Instruction {
     // Remove inline comments
     let line = if let Some(index) = line.find("//") {
-        &line[..index]
+        line[..index].trim()
     } else {
-        &line[..].trim()
+        line[..].trim()
     };
 
     if line.contains('=') && line.contains(';') {
