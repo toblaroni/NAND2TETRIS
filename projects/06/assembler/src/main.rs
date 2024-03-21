@@ -1,7 +1,4 @@
-use std:: {
-    env,
-    process
-};
+use std:: {env, process};
 
 mod assembler;
 mod parser;
@@ -24,7 +21,7 @@ fn main() {
         _ => {
             println!("Assembling {}", &args[1]);
             match assembler::assemble(&args[1]) {
-                Ok(()) => println!("Successfully assembled source file {}", args[1]),
+                Ok(()) => (),
                 Err(e) => println!("Error while assembling source file {}: {}", args[1], e)
             }
         }

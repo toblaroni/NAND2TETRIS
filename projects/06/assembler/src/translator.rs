@@ -1,8 +1,8 @@
 use crate::parser::{Instruction, LineType};
 fn translate_a_instruction(ins: Instruction) -> String {
     match ins.value {
-        Some(uint) => format!("{:015b}", uint),
-        None => panic!("Error while translating A instruction")
+        Some(uint) => format!("0{:015b}", uint),
+        None       => panic!("Error while translating A instruction")
     }
 }
 
