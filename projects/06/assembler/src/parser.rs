@@ -11,7 +11,7 @@ pub struct Instruction {
 
     // C-Instruction
     pub dest: Option<String>,  
-    pub comp: Option<String>,
+    pub comp: Option<String>,  // Shouldn't be optional since comp is always present
     pub jump: Option<String>, 
 
     // a-Instruction
@@ -27,15 +27,18 @@ impl fmt::Display for Instruction {
             writeln!(f, "Type = C-Instruction")?
         }
 
-        if let Some(dest) = &self.dest {
-            writeln!(f, "DEST = {}", dest)?
-        }
-        if let Some(comp) = &self.comp {
-            writeln!(f, "COMP = {}", comp)?
-        }
-        if let Some(jump) = &self.jump {
-            writeln!(f, "JUMP = {}", jump)?
-        }
+        match self.dest.as_deref() {
+            Some(dest) => writeln!(f, "DEST = {}", dest)?,
+            None       => writeln!(f, "DEST = None")?
+        };
+        match self.comp.as_deref() {
+            Some(comp) => writeln!(f, "COMP = {}", comp)?,
+            None       => writeln!(f, "COMP = None")?
+        };
+        match self.jump.as_deref() {
+            Some(jump) => writeln!(f, "JUMP = {}", jump)?,
+            None       => writeln!(f, "JUMP = None")? 
+        };
         if let Some(value) = &self.value {
             writeln!(f, "VALUE = {}", value)?
         }
