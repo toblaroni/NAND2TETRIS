@@ -1,11 +1,11 @@
 use crate::parser::{Instruction, LineType};
+
 fn translate_a_instruction(ins: Instruction) -> String {
     match ins.value {
         Some(uint) => format!("0{:015b}", uint),
         None       => panic!("Error while translating A instruction")
     }
 }
-
 
 
 fn translate_c_instruction(ins: Instruction) -> String {
@@ -65,7 +65,7 @@ fn translate_c_instruction(ins: Instruction) -> String {
         _ => panic!("Invalid jump mnemonic")
     };
 
-    String::from("111") + dest_code + comp_code + jump_code
+    String::from("111") + comp_code + dest_code + jump_code
 }
 
 pub fn translate_instruction(ins: Instruction) -> String {

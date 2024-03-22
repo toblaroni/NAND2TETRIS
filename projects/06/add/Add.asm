@@ -6,7 +6,7 @@
 // Computes R0 = 2 + 3  (R0 refers to RAM[0])
 
 @2  // Inline comment
-D=A // Inline comment
+D=A // Inline comment  0110000  0100110 0110000
 @3
 D=D+A
 @0

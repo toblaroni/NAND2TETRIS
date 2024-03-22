@@ -2,6 +2,7 @@ use std:: {env, process};
 
 mod assembler;
 mod parser;
+mod symbol_table;
 mod translator;
 
 fn main() {
