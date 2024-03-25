@@ -62,12 +62,6 @@ fn build_instruction(line_type: Option<LineType>,
 }
 
 fn get_a_instruction(line: String) -> Instruction {
-    // Remove inline comments
-    let line = if let Some(index) = line.find("//") {
-        line[..index].trim()
-    } else {
-        line[..].trim()
-    };
 
     let value: u32 = line[1..]
                     .trim()
@@ -85,12 +79,6 @@ fn get_a_instruction(line: String) -> Instruction {
 
 
 fn get_c_instruction(line: String) -> Instruction {
-    // Remove inline comments
-    let line = if let Some(index) = line.find("//") {
-        line[..index].trim()
-    } else {
-        line[..].trim()
-    };
 
     if line.contains('=') && line.contains(';') {
         let parts: Vec<&str> = line.split('=').flat_map(|x| x.split(';')).collect();
@@ -129,12 +117,26 @@ pub fn parse_line(line: String) -> Instruction {
             jump: None,
             value: None
         }
-    }
+    } 
+
+    // Remove inline comments
+    let line = if let Some(index) = line.find("//") {
+        line[..index].trim()
+    } else {
+        line[..].trim()
+    };
 
     if line.contains('@') {
-        return get_a_instruction(line);
+        return get_a_instruction(line.to_string());
     }
     
-    get_c_instruction(line)
+    get_c_instruction(line.to_string())
 }
 
+pub fn is_label(line: String) -> bool {
+    if line.starts_with("(") {
+        return true
+    }
+
+    false
+}

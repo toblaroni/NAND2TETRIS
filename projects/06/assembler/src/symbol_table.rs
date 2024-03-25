@@ -1,20 +1,45 @@
 use std::collections::HashMap;
-use std::fs::File;
-use std::io::BufReader;
 
 pub struct SymbolTable {
     pub symbols: HashMap<String, String>,
     pub variable_count: u32,
 }
 
-pub fn first_pass(reader: &BufReader<File>) -> SymbolTable {
+fn _find_address(symbol: &String, sym_table: &SymbolTable) -> i32 {
+    0
+}
+
+
+fn _add_symbol(symbol: &String,
+               address: &String,
+               sym_table: &SymbolTable) {
+}
+
+pub fn init_sym_table() -> SymbolTable {
     /*
-     *  Does the first pass and builds up the symbol table.
-     *  Incrememnt current command whenever a C or A instruction is encountered.
-     *  It is not incremented when a label, pseudocommand or a comment is encountered 
+     *  Initialise the symbol table with the keywords.
      */
 
-    // Initialise 
-    // fn init....
+    let mut sym_table = SymbolTable {
+        symbols: HashMap::new(),
+        variable_count: 0
+    };
 
+    sym_table.symbols.insert(String::from("SP"),   String::from("0"));
+    sym_table.symbols.insert(String::from("LCL"),  String::from("1"));
+    sym_table.symbols.insert(String::from("ARG"),  String::from("2"));
+    sym_table.symbols.insert(String::from("THIS"), String::from("3"));
+    sym_table.symbols.insert(String::from("THAT"), String::from("4"));
+    
+    // R0 -> R15
+    for i in 0..16 {
+        let reg  = format!("R{}", i);
+        let addr = i.to_string();
+        sym_table.symbols.insert(reg, addr);
+    }
+
+    sym_table.symbols.insert(String::from("SCREEN"), String::from("16384"));
+    sym_table.symbols.insert(String::from("KBD"),    String::from("24576"));
+
+    sym_table
 }

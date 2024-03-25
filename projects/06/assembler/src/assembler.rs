@@ -1,12 +1,13 @@
 use std::fs::File;
 use std::io::{BufRead, BufReader, Write, Error};
 
-use crate::parser::{parse_line, Instruction};
+use crate::parser::{parse_line, Instruction, is_label};
 use crate::translator::translate_instruction;
-use crate::symbol_table::first_pass;
+use crate::symbol_table::{init_sym_table, SymbolTable};
 
 pub fn assemble(source_file: &String) -> Result<(), Error> {
     let file = File::open(source_file)?;
+    let reader = BufReader::new(file);
 
     let output_file = if let Some(index) = source_file.rfind('.') {
         source_file[..index].to_owned() + ".hack"
@@ -14,18 +15,35 @@ pub fn assemble(source_file: &String) -> Result<(), Error> {
         source_file.to_owned() + ".hack"
     };
 
-    let reader = BufReader::new(file);
+    let sym_table = init_sym_table();
 
-    let sym_table = first_pass(&reader);
-    second_pass(reader, &output_file)?;
+    first_pass(&reader, &sym_table)?;
+    second_pass(reader, &output_file, &sym_table)?;
 
     println!("Finished assembling: {} -> {}", source_file, output_file);
     Ok(())
 }
 
-fn second_pass(file_reader: BufReader<File>,
-               output_file: &String) -> Result<(), Error> {
+fn first_pass(file_reader: &BufReader<File>,
+              sym_table: &SymbolTable) -> Result<(), Error> {
     /*
+     *  Does the first pass and builds up the symbol table.
+     *  Incrememnt current command whenever a C or A instruction is encountered.
+     *  It is not incremented when a label, pseudocommand or a comment is encountered 
+     */
+    
+    for line in file_reader.lines() {
+        let line = line?;
+
+    }
+    
+    Ok(())
+}
+
+fn second_pass(file_reader: BufReader<File>,
+               output_file: &String,
+               sym_table: &SymbolTable) -> Result<(), Error> {
+    /* -----------------------------------------------------------------------
      *  Go through the entire program again, parse and translate the program.
      *  Each time a symbolic A-instruction is encountered (@xxx) where xxx is a symbol
      *  not a number, look up xxx in the symbol table.
@@ -33,7 +51,7 @@ fn second_pass(file_reader: BufReader<File>,
      *  If it's not found, it must represent a new variable. Add the pair (xxx, n) to the 
      *  symbol table, where n is the next available RAM address. The allocated RAM addresses
      *  are consecutive numbers, starting at 16.
-     */
+     * ----------------------------------------------------------------------- */
     let mut file_writer = File::create(output_file)?;
 
     for line in file_reader.lines() {
