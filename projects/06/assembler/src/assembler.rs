@@ -1,13 +1,13 @@
 use std::fs::File;
 use std::io::{BufRead, BufReader, Write, Error};
 
-use crate::parser::{parse_line, Instruction, is_label};
+use crate::parser::{parse_line, Instruction, is_label, is_instruction};
 use crate::translator::translate_instruction;
-use crate::symbol_table::{init_sym_table, SymbolTable};
+use crate::symbol_table::{init_sym_table, SymbolTable, add_symbol};
 
 pub fn assemble(source_file: &String) -> Result<(), Error> {
     let file = File::open(source_file)?;
-    let reader = BufReader::new(file);
+    let mut reader = BufReader::new(file);
 
     let output_file = if let Some(index) = source_file.rfind('.') {
         source_file[..index].to_owned() + ".hack"
@@ -15,26 +15,39 @@ pub fn assemble(source_file: &String) -> Result<(), Error> {
         source_file.to_owned() + ".hack"
     };
 
-    let sym_table = init_sym_table();
+    let mut sym_table = init_sym_table();
 
-    first_pass(&reader, &sym_table)?;
-    second_pass(reader, &output_file, &sym_table)?;
+    first_pass(&mut reader, &mut sym_table)?;
+    second_pass(reader, &output_file, &mut sym_table)?;
 
     println!("Finished assembling: {} -> {}", source_file, output_file);
     Ok(())
 }
 
-fn first_pass(file_reader: &BufReader<File>,
-              sym_table: &SymbolTable) -> Result<(), Error> {
+fn first_pass(file_reader: &mut BufReader<File>,
+              sym_table: &mut SymbolTable) -> Result<(), Error> {
     /*
      *  Does the first pass and builds up the symbol table.
      *  Incrememnt current command whenever a C or A instruction is encountered.
      *  It is not incremented when a label, pseudocommand or a comment is encountered 
      */
     
+    let mut current_command: u32 = 0;
+    
     for line in file_reader.lines() {
         let line = line?;
 
+        if is_label(&line) { 
+            // This logic should probs be in parser since we're parsing the label...
+            let mut chars = line.chars();
+            chars.next();       // Remove first char '('
+            chars.next_back();  // Remove last char ')'
+
+            add_symbol(chars.as_str().to_string(), current_command.to_string(), sym_table)
+        } else if is_instruction(&line) {
+            // println!("Incrementing current command. {}", line);
+            current_command += 1;
+        }
     }
     
     Ok(())
@@ -42,7 +55,7 @@ fn first_pass(file_reader: &BufReader<File>,
 
 fn second_pass(file_reader: BufReader<File>,
                output_file: &String,
-               sym_table: &SymbolTable) -> Result<(), Error> {
+               sym_table: &mut SymbolTable) -> Result<(), Error> {
     /* -----------------------------------------------------------------------
      *  Go through the entire program again, parse and translate the program.
      *  Each time a symbolic A-instruction is encountered (@xxx) where xxx is a symbol

@@ -133,10 +133,11 @@ pub fn parse_line(line: String) -> Instruction {
     get_c_instruction(line.to_string())
 }
 
-pub fn is_label(line: String) -> bool {
-    if line.starts_with("(") {
-        return true
-    }
+pub fn is_label(line: &String) -> bool {
+    line.starts_with("(") 
+}
 
-    false
+pub fn is_instruction(line: &String) -> bool {
+    // If the line isn't a label, a comment or whitespace, it must be a command
+    !line.trim().starts_with("(") && !line.trim().starts_with("//") && !line.is_empty()
 }

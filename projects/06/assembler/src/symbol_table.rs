@@ -5,14 +5,18 @@ pub struct SymbolTable {
     pub variable_count: u32,
 }
 
+
 fn _find_address(symbol: &String, sym_table: &SymbolTable) -> i32 {
     0
 }
 
 
-fn _add_symbol(symbol: &String,
-               address: &String,
-               sym_table: &SymbolTable) {
+pub fn add_symbol(symbol: String,
+                  address: String,
+                  sym_table: &mut SymbolTable) {
+      
+    println!("Adding [{}, {}] to symbol table", symbol, address);
+    sym_table.symbols.insert(symbol, address);
 }
 
 pub fn init_sym_table() -> SymbolTable {
