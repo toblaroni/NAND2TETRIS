@@ -6,9 +6,6 @@ use crate::translator::translate_instruction;
 use crate::symbol_table::{init_sym_table, SymbolTable, add_symbol};
 
 pub fn assemble(source_file: &String) -> Result<(), Error> {
-    let file = File::open(source_file)?;
-    let mut reader = BufReader::new(file);
-
     let output_file = if let Some(index) = source_file.rfind('.') {
         source_file[..index].to_owned() + ".hack"
     } else {
@@ -17,24 +14,25 @@ pub fn assemble(source_file: &String) -> Result<(), Error> {
 
     let mut sym_table = init_sym_table();
 
-    first_pass(&mut reader, &mut sym_table)?;
-    second_pass(reader, &output_file, &mut sym_table)?;
+    first_pass(source_file, &mut sym_table)?;
+    second_pass(source_file, &output_file, &mut sym_table)?;
 
     println!("Finished assembling: {} -> {}", source_file, output_file);
     Ok(())
 }
 
-fn first_pass(file_reader: &mut BufReader<File>,
-              sym_table: &mut SymbolTable) -> Result<(), Error> {
+fn first_pass(source_file: &String, sym_table: &mut SymbolTable) -> Result<(), Error> {
     /*
      *  Does the first pass and builds up the symbol table.
      *  Incrememnt current command whenever a C or A instruction is encountered.
      *  It is not incremented when a label, pseudocommand or a comment is encountered 
      */
-    
+    let file = File::open(source_file)?;
+    let reader = BufReader::new(file);
+
     let mut current_command: u32 = 0;
     
-    for line in file_reader.lines() {
+    for line in reader.lines() {
         let line = line?;
 
         if is_label(&line) { 
@@ -53,9 +51,9 @@ fn first_pass(file_reader: &mut BufReader<File>,
     Ok(())
 }
 
-fn second_pass(file_reader: BufReader<File>,
+fn second_pass(source_file: &String,
                output_file: &String,
-               sym_table: &mut SymbolTable) -> Result<(), Error> {
+               _sym_table: &mut SymbolTable) -> Result<(), Error> {
     /* -----------------------------------------------------------------------
      *  Go through the entire program again, parse and translate the program.
      *  Each time a symbolic A-instruction is encountered (@xxx) where xxx is a symbol
@@ -65,9 +63,11 @@ fn second_pass(file_reader: BufReader<File>,
      *  symbol table, where n is the next available RAM address. The allocated RAM addresses
      *  are consecutive numbers, starting at 16.
      * ----------------------------------------------------------------------- */
+    let file = File::open(source_file)?;
+    let reader = BufReader::new(file);
     let mut file_writer = File::create(output_file)?;
 
-    for line in file_reader.lines() {
+    for line in reader.lines() {
         let line = line?;
         let ins: Instruction = parse_line(line);
 
