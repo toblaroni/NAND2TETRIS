@@ -6,8 +6,8 @@ pub struct SymbolTable {
 }
 
 
-fn _find_address(symbol: &String, sym_table: &SymbolTable) -> i32 {
-    0
+pub fn find_address(symbol: String, sym_table: &SymbolTable) -> Option<String> {
+    sym_table.symbols.get(&symbol).cloned()
 }
 
 
@@ -15,7 +15,7 @@ pub fn add_symbol(symbol: String,
                   address: String,
                   sym_table: &mut SymbolTable) {
       
-    println!("Adding [{}, {}] to symbol table", symbol, address);
+    // println!("Adding [{}, {}] to symbol table", symbol, address);
     sym_table.symbols.insert(symbol, address);
 }
 

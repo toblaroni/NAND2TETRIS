@@ -53,8 +53,8 @@ fn first_pass(source_file: &String, sym_table: &mut SymbolTable) -> Result<(), E
 
 fn second_pass(source_file: &String,
                output_file: &String,
-               _sym_table: &mut SymbolTable) -> Result<(), Error> {
-    /* -----------------------------------------------------------------------
+               sym_table: &mut SymbolTable) -> Result<(), Error> {
+    /* ----------------------------------------------------------------------- *
      *  Go through the entire program again, parse and translate the program.
      *  Each time a symbolic A-instruction is encountered (@xxx) where xxx is a symbol
      *  not a number, look up xxx in the symbol table.
@@ -69,7 +69,7 @@ fn second_pass(source_file: &String,
 
     for line in reader.lines() {
         let line = line?;
-        let ins: Instruction = parse_line(line);
+        let ins: Instruction = parse_line(line, sym_table);
 
         if ins.line_type.is_none() {
             continue;

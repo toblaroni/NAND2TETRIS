@@ -1,6 +1,8 @@
 use core::fmt;
 use std::process;
 
+use crate::symbol_table::{find_address, SymbolTable};
+
 pub enum LineType {
     CInstruction,
     AInstruction
@@ -61,12 +63,29 @@ fn build_instruction(line_type: Option<LineType>,
     }
 }
 
-fn get_a_instruction(line: String) -> Instruction {
+fn get_a_instruction(line: String, sym_table: &mut SymbolTable) -> Instruction {
 
-    let value: u32 = line[1..]
-                    .trim()
-                    .parse()
-                    .expect("Bad a instruction value");
+    let value = line[1..].trim();
+
+    let value = match value.parse() {
+        Ok(val) => val,
+        Err(_)    => {
+            // Value is not a number. Look for it in the symbol table
+            match find_address(value.to_string(), sym_table) {
+                Some(address) => {
+                    address.parse().expect("Error occurred while parsing address form symbol table.")
+                },
+                None => {
+                    // If the value is not found in the symbol table. We have a variable.
+                    let var_address = sym_table.variable_count + 16;  // Variables start from RAM address 16.
+                    sym_table.symbols.insert(value.to_string(), var_address.to_string());
+                    sym_table.variable_count += 1;
+
+                    var_address
+                }
+            }
+        }
+    };
 
     Instruction {
         line_type: Some(LineType::AInstruction),
@@ -79,7 +98,6 @@ fn get_a_instruction(line: String) -> Instruction {
 
 
 fn get_c_instruction(line: String) -> Instruction {
-
     if line.contains('=') && line.contains(';') {
         let parts: Vec<&str> = line.split('=').flat_map(|x| x.split(';')).collect();
         build_instruction(Some(LineType::CInstruction),
@@ -101,15 +119,15 @@ fn get_c_instruction(line: String) -> Instruction {
                           Some(parts[1].to_string()),
                           None)
     } else {
-        eprintln!("Error while parsing instruction {}", line);
+        eprintln!("Error while parsing c instruction {}", line);
         process::exit(-1);
     }
 }
 
 
-pub fn parse_line(line: String) -> Instruction {
+pub fn parse_line(line: String, sym_table: &mut SymbolTable) -> Instruction {
     // We need to Separate 'line' depending on the type of instruction it is.
-    if line.starts_with("//") || line.is_empty() {
+    if !is_instruction(&line) {
         return Instruction {
             line_type: None,
             dest: None,
@@ -127,7 +145,7 @@ pub fn parse_line(line: String) -> Instruction {
     };
 
     if line.contains('@') {
-        return get_a_instruction(line.to_string());
+        return get_a_instruction(line.to_string(), sym_table);
     }
     
     get_c_instruction(line.to_string())
