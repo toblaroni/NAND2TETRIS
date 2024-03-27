@@ -151,11 +151,11 @@ pub fn parse_line(line: String, sym_table: &mut SymbolTable) -> Instruction {
     get_c_instruction(line.to_string())
 }
 
-pub fn is_label(line: &String) -> bool {
-    line.starts_with("(") 
+pub fn is_label(line: &str) -> bool {
+    line.starts_with('(') 
 }
 
-pub fn is_instruction(line: &String) -> bool {
+pub fn is_instruction(line: &str) -> bool {
     // If the line isn't a label, a comment or whitespace, it must be a command
-    !line.trim().starts_with("(") && !line.trim().starts_with("//") && !line.is_empty()
+    !line.trim().starts_with('(') && !line.trim().starts_with("//") && !line.is_empty()
 }
