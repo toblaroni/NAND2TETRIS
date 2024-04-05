@@ -8,54 +8,70 @@
  * 
  * ========================================================================== */
 
+use std::io::BufReader;
+use std::fs::File;
 
- pub fn init(inputFile: String) {
-    /*
-     * Opens the input file/stream and gets ready to parse it.
-     */
- }
+enum CommandType {
+   CArithmetic,
+   CCall,
+   CFunction,
+   CGoto,
+   CIf,
+   CLabel,
+   CPop,
+   CPush,
+   CReturn 
+}
 
+struct Command {
 
- fn hasMoreCommands() -> bool {
-    /*
-     * Are there more commands in the input?
-     */
-    return false
- }
+}
 
+pub struct Parser {
+   current_command: Option<Command>,
+   reader: BufReader<File>
+}
 
- fn advance() {
-    /*
-     * Reads the next command from the input and makes it the
-     * *current command*.
-     * Only called if there's more commands.
-     * Initially there is not current command.
-     */
- }
+impl Parser {
+   pub fn has_more_commands() -> bool {
+      false
+   }
 
+   pub fn advance() {
+     /* 
+      *  Reads the next command from the input and makes it the
+      *  *current command*.
+      *  Only called if there's more commands.
+      *  Initially there is not current command.
+      */ 
 
- fn commandType() {
-    /*
-     * Returns a constant representing the type of the current command.
-     * 
-     * Types:
-     * C_ARITHMETIC, C_PUSH, C_POP, C_LABEL, C_GOTO, C_IF, C_FUNCTION, C_RETURN, C_CALL
-     */
- }
+   }
+   pub fn command_type() -> Option<CommandType> {
+     /*
+      *  Returns a constant representing the type of the current command.
+      *  
+      *  Types:
+      *  C_ARITHMETIC, C_PUSH, C_POP, C_LABEL, C_GOTO, C_IF, C_FUNCTION, C_RETURN, C_CALL
+      */
 
+      None
+   }
 
- fn arg1() -> String {
-    /*
-     * Returns the first argument of the current command.
-     * In the case of C_ARITHMETIC, the command itself (add, sub, ...) is returned.
-     * Shouldn't be called if the current command is C_RETURN.
-     */
- }
+   pub fn arg1() -> Option<String> {
+      /*
+      * Returns the first argument of the current command.
+      * In the case of C_ARITHMETIC, the command itself (add, sub, ...) is returned.
+      * Shouldn't be called if the current command is C_RETURN.
+      */
 
+      None
+   }
 
- fn arg1() -> String {
-    /*
-     * Returns the second argument of the current command.
-     * Only called if the current command is C_PUSH, C_POP, C_FUNCTION or C_CALL.
-     */
- }
+   pub fn arg2() -> Option<String> {
+     /*
+      * Returns the second argument of the current command.
+      * Only called if the current command is C_PUSH, C_POP, C_FUNCTION or C_CALL.
+      */
+      None
+   }
+}
