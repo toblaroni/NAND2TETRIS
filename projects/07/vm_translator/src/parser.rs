@@ -23,16 +23,23 @@ enum CommandType {
    CReturn 
 }
 
-struct Command {
+pub struct Command {
 
 }
 
 pub struct Parser {
-   current_command: Option<Command>,
-   reader: BufReader<File>
+   pub current_command: Option<Command>,
+   pub reader: BufReader<File>
 }
 
 impl Parser {
+   pub fn new(file: File) -> Parser {
+      Parser {
+         current_command: None,
+         reader: BufReader::new(file)
+      }
+   }
+
    pub fn has_more_commands() -> bool {
       false
    }

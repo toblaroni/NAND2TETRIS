@@ -1,3 +1,6 @@
+use std::fs::File;
+
+use crate::parser;
 
 pub fn vm_translate(input_file: String) {
     /*
@@ -9,7 +12,8 @@ pub fn vm_translate(input_file: String) {
      *  - Constructs codeWriter to handle the output file
      *  - Marches through the file, parsing each line and generating code.
      */
-    println!("Hello source file {}", input_file);
 
-    // Init parser
+    let file = File::open(input_file).expect("Error opening input file.");
+
+    let parser = parser::Parser::new(file);
 }
