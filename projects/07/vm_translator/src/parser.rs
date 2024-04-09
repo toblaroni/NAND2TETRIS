@@ -105,14 +105,18 @@ impl Parser {
       self.current_command.as_ref().map(|command| command.command_type)
    }
 
-   pub fn arg1(&self) -> Option<String> {
+   pub fn arg1(&self) -> Option<&String> {
       /*
       * Returns the first argument of the current command.
       * In the case of C_ARITHMETIC, the command itself (add, sub, ...) is returned.
       * Shouldn't be called if the current command is C_RETURN.
       */
+      if let Some(command) = &self.current_command {
+         command.arg1
+      } else {
+         None
+      }
 
-      None
    }
 
    pub fn arg2(&self) -> Option<String> {
