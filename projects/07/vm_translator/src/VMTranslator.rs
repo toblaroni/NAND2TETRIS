@@ -13,7 +13,11 @@ pub fn vm_translate(input_file: String) {
      *  - Marches through the file, parsing each line and generating code.
      */
 
-    let file = File::open(input_file).expect("Error opening input file.");
+    let file = File::open(input_file)
+                    .expect("Error opening input file.");
 
-    let parser = parser::Parser::new(file);
+    let mut parser = parser::Parser::new(file);
+    while parser.has_more_commands() {
+        parser.advance();
+    }
 }

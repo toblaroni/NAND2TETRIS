@@ -11,7 +11,8 @@
 use std::io::{BufRead, BufReader};
 use std::fs::File;
 
-enum CommandType {
+#[derive(Clone, Copy)]
+pub enum CommandType {
    CArithmetic,
    CCall,
    CFunction,
@@ -24,8 +25,9 @@ enum CommandType {
 }
 
 pub struct Command {
-   pub command:      String,
-   pub command_type: CommandType
+   arg1:         Option<String>,
+   arg2:         Option<String>,
+   command_type: CommandType
 }
 
 pub struct Parser {
@@ -59,15 +61,14 @@ impl Parser {
             self.has_more_commands = false;
          },
          Ok(_) => {
-            if self.is_comment(&line) || line.is_empty() {
+            if self.is_comment(&line) || line.trim().is_empty() {
                self.advance()
+            } else {
+               // Remove inline comments and white space
+               self.remove_inline_comment(&mut line)
+
+
             }
-
-            self.current_command = Some(Command {
-               command: line,
-               command_type: CommandType::CArithmetic
-            });
-
          },
          Err(_) => {
             panic!("Error occurred while reading source file.")
@@ -75,29 +76,36 @@ impl Parser {
       };
    }
 
+
+   fn remove_inline_comment(&self, line: &mut String) {
+      if let Some(index) = line.find("//") {
+         *line = line[..index].trim().to_string()
+      } else {
+         *line = line[..].trim().to_string()
+      };
+   }
+
+
    fn is_comment(&self, line: &String) -> bool {
       line.trim().starts_with("//")
    }
 
 
-   fn has_more_commands(&self) -> bool {
+   pub fn has_more_commands(&self) -> bool {
       self.has_more_commands
    }
 
-
+   
    pub fn get_command_type(&self) -> Option<CommandType> {
      /*
-      *  Returns a constant representing the type of the current command.
+      *  Returns the current command's type.
       *  Types:
       *  C_ARITHMETIC, C_PUSH, C_POP, C_LABEL, C_GOTO, C_IF, C_FUNCTION, C_RETURN, C_CALL
       */
-      match self.current_command {
-         Some(command) => Some(command.command_type),
-         None          => None
-      }
+      self.current_command.as_ref().map(|command| command.command_type)
    }
 
-   pub fn arg1() -> Option<String> {
+   pub fn arg1(&self) -> Option<String> {
       /*
       * Returns the first argument of the current command.
       * In the case of C_ARITHMETIC, the command itself (add, sub, ...) is returned.
@@ -107,7 +115,7 @@ impl Parser {
       None
    }
 
-   pub fn arg2() -> Option<String> {
+   pub fn arg2(&self) -> Option<String> {
      /*
       * Returns the second argument of the current command.
       * Only called if the current command is C_PUSH, C_POP, C_FUNCTION or C_CALL.
