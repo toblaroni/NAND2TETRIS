@@ -17,15 +17,15 @@ use std::u32;
 
 #[derive(Clone, Copy)]
 pub enum CommandType {
-   CArithmetic,
-   CCall,
-   CFunction,
-   CGoto,
-   CIf,
-   CLabel,
-   CPop,
-   CPush,
-   CReturn 
+   Arithmetic,
+   Call,
+   Function,
+   Goto,
+   If,
+   Label,
+   Pop,
+   Push,
+   Return 
 }
 
 pub struct Command {
@@ -76,7 +76,7 @@ impl Parser {
       self.current_command = Some(Command {
          arg1: None,
          arg2: None,
-         command_type: CommandType::CArithmetic
+         command_type: CommandType::Arithmetic
       });
 
       let mut line = String::new();
@@ -118,7 +118,7 @@ impl Parser {
       let parts: Vec<&str> = command.split(' ').collect();
 
       // Get the first word in the command
-      let c = if let Some(c) = parts.get(0) {
+      let c = if let Some(c) = parts.first() {
          c.to_string()
       } else {
          panic!("Invalid command: {}", command)
@@ -134,7 +134,7 @@ impl Parser {
             self.current_command = Some(Command {
                arg1: Some(c),
                arg2: None,
-               command_type: CommandType::CArithmetic
+               command_type: CommandType::Arithmetic
             })
          }
          3 => {
@@ -143,7 +143,7 @@ impl Parser {
                let index:   String = parts.get(2).unwrap().to_string();
 
                self.parse_push_pop(
-                  if c == "push" {CommandType::CPush} else {CommandType::CPop},
+                  if c == "push" {CommandType::Push} else {CommandType::Pop},
                   segment, 
                   index
                );
@@ -174,7 +174,7 @@ impl Parser {
    }
 
 
-   fn is_comment(&self, line: &String) -> bool {
+   fn is_comment(&self, line: &str) -> bool {
       line.trim().starts_with("//")
    }
 
