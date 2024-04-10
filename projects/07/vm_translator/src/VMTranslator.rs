@@ -15,10 +15,12 @@ pub fn vm_translate(input_file: String) {
      * ================================================================== */
 
     let output_file = if let Some(index) = input_file.rfind(".vm") {
-
+        input_file[..index].to_owned() + ".asm"
     } else {
-        panic!("")
+        panic!("Input file requires .vm extension")
     };
+
+    println!("Output file: {}", output_file);
 
     let mut parser      = parser::Parser::new(input_file);
     let mut code_writer = codeWriter::CodeWriter::new(output_file);
