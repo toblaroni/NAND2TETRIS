@@ -10,7 +10,6 @@
 
 #![allow(dead_code)]
 
-use core::panic;
 use std::io::{BufRead, BufReader};
 use std::fs::File;
 use std::u32;
@@ -44,7 +43,9 @@ pub struct Parser {
 
 
 impl Parser {
-   pub fn new(file: File) -> Parser {
+   pub fn new(input_file: String) -> Parser {
+      let file = File::open(input_file).expect("Error opening input file.");
+
       Parser {
          current_command: None,
          reader: BufReader::new(file),
