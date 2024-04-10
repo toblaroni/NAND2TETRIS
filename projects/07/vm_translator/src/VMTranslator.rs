@@ -18,6 +18,16 @@ pub fn vm_translate(input_file: String) {
 
     let mut parser = parser::Parser::new(file);
     while parser.has_more_commands() {
-        parser.advance();
+        parser.advance();  // Advance to the next command
+
+        if let Some(arg1) = parser.arg1() {
+            if let Some(arg2) = parser.arg2() {
+                println!("arg1: {}, arg2: {}", arg1, arg2)
+            } else {
+                println!("arg1 {}", arg1)
+            }
+        }
+
+        // Translate parser.current_command
     }
 }

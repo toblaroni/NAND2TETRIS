@@ -8,8 +8,12 @@
  * 
  * ========================================================================== */
 
+#![allow(dead_code)]
+
+use core::panic;
 use std::io::{BufRead, BufReader};
 use std::fs::File;
+use std::u32;
 
 #[derive(Clone, Copy)]
 pub enum CommandType {
@@ -31,9 +35,11 @@ pub struct Command {
 }
 
 pub struct Parser {
-   current_command:   Option<Command>,
-   reader:            BufReader<File>,
-   has_more_commands: bool
+   current_command:     Option<Command>,
+   reader:              BufReader<File>,
+   has_more_commands:   bool,
+   arithmetic_commands: [String; 9],
+   mem_segments:        [String; 8]
 }
 
 
@@ -42,17 +48,37 @@ impl Parser {
       Parser {
          current_command: None,
          reader: BufReader::new(file),
-         has_more_commands: true
+         has_more_commands: true,
+         arithmetic_commands: [
+            "add".to_string(), "sub".to_string(), "neg".to_string(), 
+            "eq".to_string(),  "gt".to_string(),  "lt".to_string(),
+            "and".to_string(), "or".to_string(),  "not".to_string()
+         ],
+         mem_segments: [
+            "argument".to_string(), "local".to_string(),
+            "static".to_string(),   "constant".to_string(),
+            "this".to_string(),     "that".to_string(),
+            "pointer".to_string(),  "temp".to_string(),
+         ]
       }
    }
 
    pub fn advance(&mut self) {
-     /* 
-      *  Reads the next command from the input and makes it the
-      *  *current command*.
-      *  Only called if there's more commands.
-      *  Initially there is not current command.
-      */ 
+      // ======================================================
+      // Reads the next command from the input and makes it the
+      // *current command*.
+      // Only called if there's more commands.
+      // Initially there is not current command.
+      // ======================================================
+
+      // Set current command to empty to avoid weird bugs
+      // Not really necessary since if we're advancing correctly current_command will always be udpated
+      self.current_command = Some(Command {
+         arg1: None,
+         arg2: None,
+         command_type: CommandType::CArithmetic
+      });
+
       let mut line = String::new();
 
       match self.reader.read_line(&mut line) {
@@ -61,13 +87,13 @@ impl Parser {
             self.has_more_commands = false;
          },
          Ok(_) => {
-            if self.is_comment(&line) || line.trim().is_empty() {
+            if self.is_comment(&line) || line.trim().is_empty() {    // Eat comments and whitespace
                self.advance()
             } else {
+               // Now we've found the next command, we need to update the 'current_command' field
                // Remove inline comments and white space
-               self.remove_inline_comment(&mut line)
-
-
+               self.remove_inline_comment(&mut line);
+               self.parse_command(line)
             }
          },
          Err(_) => {
@@ -75,7 +101,7 @@ impl Parser {
          }
       };
    }
-
+   
 
    fn remove_inline_comment(&self, line: &mut String) {
       if let Some(index) = line.find("//") {
@@ -86,15 +112,75 @@ impl Parser {
    }
 
 
+   fn parse_command(&mut self, command: String) {
+      // Build command from current line
+      // this will probs have to be re-written for the next project
+      let parts: Vec<&str> = command.split(' ').collect();
+
+      // Get the first word in the command
+      let c = if let Some(c) = parts.get(0) {
+         c.to_string()
+      } else {
+         panic!("Invalid command: {}", command)
+      };
+      
+      match parts.len() {
+         1 => {
+
+            if !self.arithmetic_commands.contains(&c) {
+               panic!("Invalid command: {}", command);
+            }
+
+            self.current_command = Some(Command {
+               arg1: Some(c),
+               arg2: None,
+               command_type: CommandType::CArithmetic
+            })
+         }
+         3 => {
+            if c == "push" || c == "pop" {
+               let segment: String = parts.get(1).unwrap().to_string();
+               let index:   String = parts.get(2).unwrap().to_string();
+
+               self.parse_push_pop(
+                  if c == "push" {CommandType::CPush} else {CommandType::CPop},
+                  segment, 
+                  index
+               );
+            }
+         },
+         _ => panic!("Invalid command: {}", command)
+      }
+
+   }
+
+   fn parse_push_pop(&mut self, push_pop: CommandType, segment: String, index: String) {
+      if !self.mem_segments.contains(&segment) {
+         panic!("Invalid memory segment")
+      }
+
+      // Check that the index can be parsed as u32 otherwise it's invalid
+      match index.parse::<u32>() {
+         Ok(_) => {
+            self.current_command = Some(Command {
+               arg1: Some(segment),
+               arg2: Some(index),
+               command_type: push_pop
+            })
+         },
+         Err(_) => panic!("Invalid index for push/pop command: {}", index)
+      };
+
+   }
+
+
    fn is_comment(&self, line: &String) -> bool {
       line.trim().starts_with("//")
    }
 
-
    pub fn has_more_commands(&self) -> bool {
       self.has_more_commands
    }
-
    
    pub fn get_command_type(&self) -> Option<CommandType> {
      /*
@@ -111,19 +197,23 @@ impl Parser {
       * In the case of C_ARITHMETIC, the command itself (add, sub, ...) is returned.
       * Shouldn't be called if the current command is C_RETURN.
       */
-      if let Some(command) = &self.current_command {
-         command.arg1
+      if let Some(command) = self.current_command.as_ref() {
+         command.arg1.as_ref()
       } else {
          None
       }
 
    }
 
-   pub fn arg2(&self) -> Option<String> {
+   pub fn arg2(&self) -> Option<&String> {
      /*
       * Returns the second argument of the current command.
       * Only called if the current command is C_PUSH, C_POP, C_FUNCTION or C_CALL.
       */
-      None
+      if let Some(command) = self.current_command.as_ref() {
+         command.arg2.as_ref()
+      } else {
+         None
+      }
    }
 }
