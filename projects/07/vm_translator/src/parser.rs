@@ -104,7 +104,7 @@ impl Parser {
    }
    
 
-   fn remove_inline_comment(&self, line: &mut String) {
+   fn remove_inline_comment(&self, line: &mut String ) {
       if let Some(index) = line.find("//") {
          *line = line[..index].trim().to_string()
       } else {
