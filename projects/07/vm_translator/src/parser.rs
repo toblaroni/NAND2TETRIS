@@ -28,7 +28,7 @@ pub enum CommandType {
 }
 
 pub struct Command {
-   arg1:         Option<String>,
+   arg1:         String,
    arg2:         Option<String>,
    command_type: CommandType
 }
@@ -191,30 +191,25 @@ impl Parser {
       */
       self.current_command.as_ref().map(|command| command.command_type)
    }
+}
 
-   pub fn arg1(&self) -> Option<&String> {
+
+impl Command {
+   pub fn get_arg1(&self) -> String {
       /*
       * Returns the first argument of the current command.
       * In the case of C_ARITHMETIC, the command itself (add, sub, ...) is returned.
       * Shouldn't be called if the current command is C_RETURN.
       */
-      if let Some(command) = self.current_command.as_ref() {
-         command.arg1.as_ref()
-      } else {
-         None
-      }
-
+      self.arg1
    }
 
-   pub fn arg2(&self) -> Option<&String> {
+   pub fn get_arg2(&self) -> Option<String> {
      /*
       * Returns the second argument of the current command.
       * Only called if the current command is C_PUSH, C_POP, C_FUNCTION or C_CALL.
       */
-      if let Some(command) = self.current_command.as_ref() {
-         command.arg2.as_ref()
-      } else {
-         None
-      }
+      self.arg2
    }
+
 }
