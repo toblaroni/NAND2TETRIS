@@ -1,6 +1,6 @@
 
 use crate::parser;
-use crate::codeWriter;
+use crate::code_writer;
 
 pub fn vm_translate(input_file: String) {
     /* ==================================================================
@@ -23,19 +23,21 @@ pub fn vm_translate(input_file: String) {
     println!("Output file: {}", output_file);
 
     let mut parser      = parser::Parser::new(input_file);
-    let mut code_writer = codeWriter::CodeWriter::new(output_file);
+    let mut code_writer = code_writer::CodeWriter::new(output_file);
 
     while parser.has_more_commands() {
         parser.advance();  // Update parser.currentCommand
 
-        if let Some(arg1) = parser.arg1() {
-            if let Some(arg2) = parser.arg2() {
-                println!("arg1: {}, arg2: {}", arg1, arg2)
+        if let Some(command) = parser.get_current_command() {
+            println!("Command: ");
+            if let Some(arg2) = command.get_arg2() {
+                println!("Arg1: {}, Arg2: {}", command.get_arg1(), arg2);
             } else {
-                println!("arg1 {}", arg1)
+                println!("Arg1: {}", command.get_arg1());
             }
+
+            code_writer.translate_command(command)
         }
 
-        // Translate parser.current_command
     }
 }

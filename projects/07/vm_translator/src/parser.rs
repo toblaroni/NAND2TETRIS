@@ -74,12 +74,7 @@ impl Parser {
 
       // Set current command to empty to avoid weird bugs
       // Not really necessary since if we're advancing correctly current_command will always be udpated
-      self.current_command = Some(Command {
-         arg1: None,
-         arg2: None,
-         command_type: CommandType::Arithmetic
-      });
-
+      self.current_command = None;
       let mut line = String::new();
 
       match self.reader.read_line(&mut line) {
@@ -133,7 +128,7 @@ impl Parser {
             }
 
             self.current_command = Some(Command {
-               arg1: Some(c),
+               arg1: c,
                arg2: None,
                command_type: CommandType::Arithmetic
             })
@@ -164,7 +159,7 @@ impl Parser {
       match index.parse::<u32>() {
          Ok(_) => {
             self.current_command = Some(Command {
-               arg1: Some(segment),
+               arg1: segment,
                arg2: Some(index),
                command_type: push_pop
             })
@@ -175,21 +170,17 @@ impl Parser {
    }
 
 
+   pub fn get_current_command(&self) -> Option<&Command> {
+      self.current_command.as_ref()
+   }
+
+
    fn is_comment(&self, line: &str) -> bool {
       line.trim().starts_with("//")
    }
 
    pub fn has_more_commands(&self) -> bool {
       self.has_more_commands
-   }
-   
-   pub fn get_command_type(&self) -> Option<CommandType> {
-     /*
-      *  Returns the current command's type.
-      *  Types:
-      *  C_ARITHMETIC, C_PUSH, C_POP, C_LABEL, C_GOTO, C_IF, C_FUNCTION, C_RETURN, C_CALL
-      */
-      self.current_command.as_ref().map(|command| command.command_type)
    }
 }
 
@@ -201,7 +192,7 @@ impl Command {
       * In the case of C_ARITHMETIC, the command itself (add, sub, ...) is returned.
       * Shouldn't be called if the current command is C_RETURN.
       */
-      self.arg1
+      self.arg1.clone()
    }
 
    pub fn get_arg2(&self) -> Option<String> {
@@ -209,7 +200,10 @@ impl Command {
       * Returns the second argument of the current command.
       * Only called if the current command is C_PUSH, C_POP, C_FUNCTION or C_CALL.
       */
-      self.arg2
+      self.arg2.clone()
    }
 
+   pub fn get_command_type(&self) -> CommandType {
+      self.command_type.clone()
+   }
 }
