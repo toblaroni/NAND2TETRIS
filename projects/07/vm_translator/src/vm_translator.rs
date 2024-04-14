@@ -29,12 +29,6 @@ pub fn vm_translate(input_file: String) {
         parser.advance();  // Update parser.currentCommand
 
         if let Some(command) = parser.get_current_command() {
-            println!("Command: ");
-            if let Some(arg2) = command.get_arg2() {
-                println!("Arg1: {}, Arg2: {}", command.get_arg1(), arg2);
-            } else {
-                println!("Arg1: {}", command.get_arg1());
-            }
 
             code_writer.translate_command(command)
         }

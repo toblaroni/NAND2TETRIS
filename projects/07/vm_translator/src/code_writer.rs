@@ -27,6 +27,10 @@ impl CodeWriter {
     }
 
     pub fn translate_command(&mut self, command: &Command) {
+        println!("Arg1: {}, Arg2: {}", command.get_arg1(), 
+                                       command.get_arg2()
+                                              .unwrap_or("None".to_string()));
+
         match command.get_command_type() {
             Arithmetic => self.translate_arithmetic(command),
             Pop | Push => self.translate_push_pop(command),
@@ -38,7 +42,7 @@ impl CodeWriter {
     fn translate_arithmetic(&mut self, command: &Command) {
         // Translates arithmetic command
         println!("Translating arithmetic command");
-        self.write_string(command.get_arg1())
+        
 
     }
 
