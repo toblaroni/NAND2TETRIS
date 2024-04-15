@@ -27,9 +27,11 @@ impl CodeWriter {
     }
 
     pub fn translate_command(&mut self, command: &Command) {
-        println!("Arg1: {}, Arg2: {}", command.get_arg1(), 
-                                       command.get_arg2()
-                                              .unwrap_or("None".to_string()));
+        match command.get_arg2() {
+            Some(arg2) => println!("Arg1: {}, Arg2: {}", command.get_arg1(), arg2),
+            None => println!("Arg1: {}, Arg2: None", command.get_arg1()),
+        }
+
 
         match command.get_command_type() {
             Arithmetic => self.translate_arithmetic(command),
@@ -50,6 +52,10 @@ impl CodeWriter {
         // Translates push_pop command
         println!("Translating push / pop command");
 
+        match command.get_arg1().as_str() {
+            "constant" => println!("constant"),
+            _ => panic!("")
+        }
     }
 
     fn write_string(&mut self, string: String) {

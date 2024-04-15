@@ -14,6 +14,8 @@ use std::io::{BufRead, BufReader};
 use std::fs::File;
 use std::u32;
 
+use crate::vm_translator::translation_error;
+
 #[derive(Clone, Copy)]
 pub enum CommandType {
    Arithmetic,
@@ -93,7 +95,7 @@ impl Parser {
             }
          },
          Err(_) => {
-            panic!("Error occurred while reading source file.")
+            translation_error("Error occurred while reading source file.")
          }
       };
    }
@@ -117,14 +119,14 @@ impl Parser {
       let c = if let Some(c) = parts.first() {
          c.to_string()
       } else {
-         panic!("Invalid command: {}", command)
+         translation_error(&format!("Invalid command: {}", command));
       };
       
       match parts.len() {
          1 => {
 
             if !self.arithmetic_commands.contains(&c) {
-               panic!("Invalid command: {}", command);
+               translation_error(&format!("Invalid command: {}", command));
             }
 
             self.current_command = Some(Command {
@@ -145,14 +147,14 @@ impl Parser {
                );
             }
          },
-         _ => panic!("Invalid command: {}", command)
+         _ => translation_error(&format!("Invalid command: {}", command))
       }
 
    }
 
    fn parse_push_pop(&mut self, push_pop: CommandType, segment: String, index: String) {
       if !self.mem_segments.contains(&segment) {
-         panic!("Invalid memory segment")
+         translation_error("Invalid memory segment")
       }
 
       // Check that the index can be parsed as u32 otherwise it's invalid
@@ -164,7 +166,7 @@ impl Parser {
                command_type: push_pop
             })
          },
-         Err(_) => panic!("Invalid index for push/pop command: {}", index)
+         Err(_) => translation_error(&format!("Invalid index for push/pop command: {}", index))
       };
 
    }
@@ -186,24 +188,24 @@ impl Parser {
 
 
 impl Command {
-   pub fn get_arg1(&self) -> String {
+   pub fn get_arg1(&self) -> &String {
       /*
       * Returns the first argument of the current command.
       * In the case of C_ARITHMETIC, the command itself (add, sub, ...) is returned.
       * Shouldn't be called if the current command is C_RETURN.
       */
-      self.arg1.clone()
+      &self.arg1
    }
 
-   pub fn get_arg2(&self) -> Option<String> {
+   pub fn get_arg2(&self) -> Option<&String> {
      /*
       * Returns the second argument of the current command.
       * Only called if the current command is C_PUSH, C_POP, C_FUNCTION or C_CALL.
       */
-      self.arg2.clone()
+      self.arg2.as_ref()
    }
 
-   pub fn get_command_type(&self) -> CommandType {
-      self.command_type.clone()
+   pub fn get_command_type(&self) -> &CommandType {
+      &self.command_type
    }
 }

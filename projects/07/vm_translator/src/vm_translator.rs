@@ -1,4 +1,6 @@
 
+use std::process;
+
 use crate::parser;
 use crate::code_writer;
 
@@ -11,6 +13,10 @@ pub fn vm_translate(input_file: String) {
      *  - Constructs parser to handle the input file
      *  - Constructs codeWriter to handle the output file
      *  - Marches through the file, parsing each line and generating code.
+     * 
+     *  Translator is extremely temperamental and will panic at when 
+     *  encountering any bug.
+     *  Probs better to handle these with Result<> but idk :shrug:
      * 
      * ================================================================== */
 
@@ -34,4 +40,9 @@ pub fn vm_translate(input_file: String) {
         }
 
     }
+}
+
+pub fn translation_error(msg: &str) -> ! {
+    eprintln!("Error: {}", msg);
+    process::exit(-1);
 }
