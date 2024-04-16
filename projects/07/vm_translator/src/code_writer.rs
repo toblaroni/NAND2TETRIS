@@ -67,18 +67,28 @@ impl CodeWriter {
     }
 
     fn pushpop_constant(&self, command: &Command) {
-        
+        /*
+            @<constant>
+            D=A
+            @SP
+            A=M
+            M=D
+            // BOSHHHHHHHHHHHHHHH
+         */
     }
 
 
     fn modify_SP(&mut self, inc: bool) {
+        // Incrementing / Decrementing the value of stack pointer
+        let mut strings = vec!["@SP"];
         if inc {
-            self.write_string("@SP");
-            self.write_string("M=M+1");  // Inc address in SP
+            // Inc address in SP
+            strings.push("M=M+1");
         } else {
-            self.write_string("@SP");
-            self.write_string("M=M-1");  // Dec address in SP
+            // Decc address in SP
+            strings.push("M=M-1");
         }
+        self.write_strings(&strings);
     }
 
     fn write_string(&mut self, string: &str) {
@@ -89,8 +99,13 @@ impl CodeWriter {
     }
 
 
-    fn write_strings(&mut self, string: Vec<&str>) {
-        // Write string to self.writer
+    fn write_strings(&mut self, strings: &[&str]) {
+        // Write every string in strings on a newline
+        for string in strings {
+            let string = format!("{}\n", string);
+            self.writer.write_all(string.as_bytes())
+                       .expect("Error occurred while writing to output.");
+        }
     }
 }
 
