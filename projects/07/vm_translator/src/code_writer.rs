@@ -4,12 +4,13 @@
 
 #![allow(dead_code)]
 
-use std::io::BufWriter;
+use std::io::{BufWriter, Write};
 use std::fs::File;
-use std::io::Write;
 
 use crate::parser::Command;
+use crate::vm_translator::translation_error;
 use crate::parser::CommandType::*;
+
 
 pub struct CodeWriter {
     writer: BufWriter<File>
@@ -48,21 +49,48 @@ impl CodeWriter {
 
     }
 
-    fn translate_push_pop(&mut self, command: &Command) {
+    fn translate_push_pop(&self, command: &Command) {
         // Translates push_pop command
         println!("Translating push / pop command");
 
+        // Which mem segment are we working with
         match command.get_arg1().as_str() {
-            "constant" => println!("constant"),
-            _ => panic!("")
+            "argument"      => println!("argument not implemented"),
+            "local"         => println!("local not implemented"),
+            "static"        => println!("static not implemented"),
+            "constant"      => self.pushpop_constant(command),
+            "this" | "that" => println!("this / that not implemented"),
+            "pointer"       => println!("pointer not implemented"),
+            "temp"          => println!("temp not implemented"),
+            _               => translation_error(&format!("Invalid memory location: {}", command.get_arg1()))
+        };
+    }
+
+    fn pushpop_constant(&self, command: &Command) {
+        
+    }
+
+
+    fn modify_SP(&mut self, inc: bool) {
+        if inc {
+            self.write_string("@SP");
+            self.write_string("M=M+1");  // Inc address in SP
+        } else {
+            self.write_string("@SP");
+            self.write_string("M=M-1");  // Dec address in SP
         }
     }
 
-    fn write_string(&mut self, string: String) {
+    fn write_string(&mut self, string: &str) {
         // Take a string and write that shit to the output file
         let string = format!("{}\n", string);
         self.writer.write_all(string.as_bytes())
                    .expect("Error occurred while writing to output.");
+    }
+
+
+    fn write_strings(&mut self, string: Vec<&str>) {
+        // Write string to self.writer
     }
 }
 
