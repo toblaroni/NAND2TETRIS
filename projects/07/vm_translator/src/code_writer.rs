@@ -49,23 +49,21 @@ impl CodeWriter {
         match command.get_arg1().as_str() {
             "add" => self.two_var_arithmetic("M=M+D"),
             "sub" => self.two_var_arithmetic("M=M-D"),
-            "neg" => println!("neg"),
-            "eq"  => println!("eq"),
+            "neg" => self.write_strings(&vec!["@SP", "A=M-1", "M=-M"]),
+            "eq"  => self.two_var_arithmetic("M=M"),
             "gt"  => println!("gt"),
             "lt"  => println!("lt"),
-            "and" => println!("and"),
-            "or"  => println!("or"),
-            "not" => println!("not"),
+            "and" => self.two_var_arithmetic("D&M"),
+            "or"  => self.two_var_arithmetic("D|M"),
+            "not" => self.write_strings(&vec!["@SP", "A=M-1", "M=!M"]),
             _     => translation_error(&format!("Bad arithmetic command {}", command.get_arg1()))
         };
     }
 
+
     fn two_var_arithmetic(&mut self, arith_command: &str) {
         /*
-         *  Inserts the following assembly.
-         *  Since most arithmetic commands are of the form f(x, y) most of the assembly is the same,
-         *  this way we can take the final line as a param.
-         *  The code stores x in y in the D register. Then accesses x in M (SP--, A=M-1)
+         *  Most of the arithmetics have the same code:
          * 
          *  EXAMPLE (ADD)
          *  @SP
