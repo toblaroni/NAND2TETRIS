@@ -50,7 +50,17 @@ impl CodeWriter {
             "add" => self.two_var_arithmetic("M=M+D"),
             "sub" => self.two_var_arithmetic("M=M-D"),
             "neg" => self.write_strings(&vec!["@SP", "A=M-1", "M=-M"]),
-            "eq"  => self.two_var_arithmetic("M=M"),
+            "eq"  => {
+                /*
+                 *  @SP
+                 *  A=M-1
+                 *  D=M
+                 * 
+                 *  SP--
+                 * 
+                 *  @SP
+                 */
+            },
             "gt"  => println!("gt"),
             "lt"  => println!("lt"),
             "and" => self.two_var_arithmetic("D&M"),
