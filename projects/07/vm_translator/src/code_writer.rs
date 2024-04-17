@@ -2,7 +2,7 @@
  * Generates assembly code from the parsed VM command.
  * ================================================== */
 
-#![allow(dead_code)]
+#![allow(non_snake_case)]
 
 use std::io::{BufWriter, Write};
 use std::fs::File;
@@ -49,7 +49,7 @@ impl CodeWriter {
 
     }
 
-    fn translate_push_pop(&self, command: &Command) {
+    fn translate_push_pop(&mut self, command: &Command) {
         // Translates push_pop command
         println!("Translating push / pop command");
 
@@ -66,15 +66,49 @@ impl CodeWriter {
         };
     }
 
-    fn pushpop_constant(&self, command: &Command) {
+    fn pushpop_constant(&mut self, command: &Command) {
         /*
-            @<constant>
-            D=A
-            @SP
-            A=M
-            M=D
-            // BOSHHHHHHHHHHHHHHH
+         *   @<constant>
+         *   D=A
+         *   @SP
+         *   A=M
+         *   M=D
+         *   SP++
          */
+        
+        // Parse constant
+        let constant = if let Some(c) = command.get_arg2() {
+            match str::parse::<u32>(c) {
+                Ok(n) => {
+                    if n < 32768 {
+                        c
+                    } else {
+                        translation_error(&format!("Max constant exceeded: {}. Constant should be less than 32768.", c));
+                    }
+                },
+                Err(_) => translation_error(&format!("{} is not an unsigned integer.", c))
+            }
+        } else {
+            translation_error("Push/Pop command requires a second argument.\n'push constant <constant>")
+        };
+
+        // Store the constant in D
+        let label = format!("@{}", constant);
+        let mut strings: Vec<&str> = vec![&label];  // @<constant
+        strings.push("D=A");                        // D=A
+
+        self.write_strings(&strings);
+
+        // Deref SP and inc sp
+        self.deref_SP();
+        self.modify_SP(true);
+    }
+
+    fn deref_SP(&mut self) {
+        // @SP
+        // A=M
+        let strings = vec!["@SP", "A=M"];
+        self.write_strings(&strings);
     }
 
 
