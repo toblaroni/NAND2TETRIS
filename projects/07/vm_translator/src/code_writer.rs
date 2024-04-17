@@ -46,6 +46,55 @@ impl CodeWriter {
         // Translates arithmetic command
         println!("Translating arithmetic command");
         
+        match command.get_arg1().as_str() {
+            "add" => self.two_var_arithmetic("M=M+D"),
+            "sub" => self.two_var_arithmetic("M=M-D"),
+            "neg" => println!("neg"),
+            "eq"  => println!("eq"),
+            "gt"  => println!("gt"),
+            "lt"  => println!("lt"),
+            "and" => println!("and"),
+            "or"  => println!("or"),
+            "not" => println!("not"),
+            _     => translation_error(&format!("Bad arithmetic command {}", command.get_arg1()))
+        };
+    }
+
+    fn two_var_arithmetic(&mut self, arith_command: &str) {
+        /*
+         *  Inserts the following assembly.
+         *  Since most arithmetic commands are of the form f(x, y) most of the assembly is the same,
+         *  this way we can take the final line as a param.
+         *  The code stores x in y in the D register. Then accesses x in M (SP--, A=M-1)
+         * 
+         *  EXAMPLE (ADD)
+         *  @SP
+         *  A=M-1
+         *  D=M   // Store y in D
+         *  SP--
+         *  @SP
+         *  A=M-1
+         *  ------ Everthing above this is generic
+         *  M=M+D   <-- This line will be different for every arithmetic command that operates on 2 variables (arith_command arg)
+         */
+
+        self.write_strings(
+            &vec![
+                "@SP",
+                "A=M-1",
+                "D=M"
+            ]
+        );
+
+        self.modify_SP(false);  // SP--
+
+        self.write_strings(
+            &vec![
+                "@SP",
+                "A=M-1",
+                arith_command
+            ]
+        );
 
     }
 
@@ -94,13 +143,12 @@ impl CodeWriter {
 
         // Store the constant in D
         let label = format!("@{}", constant);
-        let mut strings: Vec<&str> = vec![&label];  // @<constant
-        strings.push("D=A");                        // D=A
-
-        self.write_strings(&strings);
+        self.write_strings(&vec![&label, "D=A"]);
 
         // Deref SP and inc sp
         self.deref_SP();
+        self.write_string("M=D");
+
         self.modify_SP(true);
     }
 
