@@ -13,7 +13,9 @@ use crate::parser::CommandType::*;
 
 
 pub struct CodeWriter {
-    writer: BufWriter<File>
+    writer: BufWriter<File>,
+    
+    comp_count: u32     // No. of 'store true' labels.
 }
 
 impl CodeWriter {
@@ -22,7 +24,8 @@ impl CodeWriter {
                                .expect("Couldn't open output file");
 
         CodeWriter {
-            writer: BufWriter::new(file)
+            writer: BufWriter::new(file),
+            comp_count: 0,
         }
 
     }
@@ -50,19 +53,9 @@ impl CodeWriter {
             "add" => self.two_var_arithmetic("M=M+D"),
             "sub" => self.two_var_arithmetic("M=M-D"),
             "neg" => self.write_strings(&vec!["@SP", "A=M-1", "M=-M"]),
-            "eq"  => {
-                /*
-                 *  @SP
-                 *  A=M-1
-                 *  D=M
-                 * 
-                 *  SP--
-                 * 
-                 *  @SP
-                 */
-            },
-            "gt"  => println!("gt"),
-            "lt"  => println!("lt"),
+            "eq"  => self.compare_arithmetic("D;JEQ"),
+            "gt"  => self.compare_arithmetic("D;JLT"),
+            "lt"  => self.compare_arithmetic("D;JGT"),
             "and" => self.two_var_arithmetic("D&M"),
             "or"  => self.two_var_arithmetic("D|M"),
             "not" => self.write_strings(&vec!["@SP", "A=M-1", "M=!M"]),
@@ -70,40 +63,75 @@ impl CodeWriter {
         };
     }
 
+    fn compare_arithmetic(&mut self, comp: &str) {
+        /*
+         *  Handles gt, lt and eq. 
+         *  We have an IF statement (if x == y store TRUE, else FALSE),
+         *  Therefore we need a label and a jump... 
+         *  We can use comp_count to write out different labels
+         *  this is not the most efficient way...
+         *  EXAMPLE (eq)
+         *      @SP
+         *      A=M-1 
+         *      D=M
+         *      SP--
+         *      @SP
+         *      A=M-1
+         *      D=D-M      
+         *      @true_<comp_count>
+         *      D;JEQ   // JEQ will change depending on jmp_type
+         *      @SP     
+         *      A=M-1
+         *      M=0     // Store false
+         *      @comp_end_<comp_count>
+         *      ;JMP
+         *  (true_<comp_count>)
+         *      @SP
+         *      A=M-1
+         *      M=-1
+         *  (comp_end_<comp_count>)
+         * 
+         */
+
+        let true_label     = format!("true_{}", self.comp_count);
+        let comp_end_label = format!("comp_end_{}", self.comp_count);
+
+        self.write_strings(&vec!["@SP", "A=M-1", "D=M"]);
+        self.modify_SP(false);
+        self.write_strings(&vec!["@SP", "A=M-1", "D=D-M"]);
+        
+        self.write_string(&format!("@{}", true_label));
+        self.write_string(comp);
+        // Store false
+        self.write_strings(&vec!["@SP", "A=M-1", "M=0"]);
+        self.write_string(&format!("@{}", comp_end_label));
+        self.write_string("0;JMP");
+
+        // Store true
+        self.write_string(&format!("({})", true_label));
+        self.write_strings(&vec!["@SP", "A=M-1", "M=-1"]);
+
+        self.write_string(&format!("({})", comp_end_label));
+        self.comp_count += 1;
+    }
+
 
     fn two_var_arithmetic(&mut self, arith_command: &str) {
         /*
          *  Most of the arithmetics have the same code:
-         * 
          *  EXAMPLE (ADD)
-         *  @SP
-         *  A=M-1
-         *  D=M   // Store y in D
-         *  SP--
-         *  @SP
-         *  A=M-1
-         *  ------ Everthing above this is generic
-         *  M=M+D   <-- This line will be different for every arithmetic command that operates on 2 variables (arith_command arg)
+         *      @SP
+         *      A=M-1
+         *      D=M   // Store y in D
+         *      SP--
+         *      @SP
+         *      A=M-1
+         *      ------ Everthing above this is generic
+         *      M=M+D   <-- arith_command
          */
-
-        self.write_strings(
-            &vec![
-                "@SP",
-                "A=M-1",
-                "D=M"
-            ]
-        );
-
-        self.modify_SP(false);  // SP--
-
-        self.write_strings(
-            &vec![
-                "@SP",
-                "A=M-1",
-                arith_command
-            ]
-        );
-
+        self.write_strings(&vec!["@SP", "A=M-1","D=M"]);
+        self.modify_SP(false);                                     // SP--
+        self.write_strings(&vec!["@SP", "A=M-1", arith_command]);
     }
 
     fn translate_push_pop(&mut self, command: &Command) {
