@@ -11,7 +11,7 @@
 use std::io::{BufWriter, Write};
 use std::fs::File;
 
-use crate::parser::Command;
+use crate::parser::{Command, CommandType};
 use crate::vm_translator::translation_error;
 use crate::parser::CommandType::*;
 
@@ -144,14 +144,19 @@ impl CodeWriter {
 
         // Which mem segment are we working with
         match command.get_arg1().as_str() {
-            "argument"      => println!("argument not implemented"),
-            "local"         => println!("local not implemented"),
-            "static"        => println!("static not implemented"),
-            "constant"      => self.pushpop_constant(command),
-            "this" | "that" => println!("this / that not implemented"),
-            "pointer"       => println!("pointer not implemented"),
-            "temp"          => println!("temp not implemented"),
-            _               => translation_error(&format!("Invalid memory location: {}", command.get_arg1()))
+            "argument" | "local" |
+            "this      | that" => {
+                if let Push = command.get_command_type() {
+                    self.generic_mem_push(&command);
+                } else {
+                    println!("POP not implemented")
+                }
+            },
+            "static"           => println!("static not implemented"),
+            "constant"         => self.pushpop_constant(command),
+            "pointer"          => println!("pointer not implemented"),
+            "temp"             => println!("temp not implemented"),
+            _                  => translation_error(&format!("Invalid memory location: {}", command.get_arg1()))
         };
     }
 
@@ -191,6 +196,24 @@ impl CodeWriter {
 
         self.modify_SP(true);
     }
+
+
+    fn generic_mem_push(&mut self, command: &Command) {
+        /*  I think most the code for local, argument, this and that will be the same
+         *  Code for 'pop' will be similar but in reverse
+         *  EXAMPLE (push local <index>) 
+         *      @LCL        // This will change depending on the segment
+         *      D=A
+         *      @<index>
+         *      A=D+A       // M=[LCL+<index>]
+         *      D=M
+         *      @SP
+         *      A=M
+         *      M=D
+         *      SP++
+         */
+    }
+
 
     fn deref_SP(&mut self) {
         // @SP
