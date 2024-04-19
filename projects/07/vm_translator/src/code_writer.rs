@@ -13,7 +13,6 @@ use std::fs::File;
 
 use crate::parser::{Command, CommandType};
 use crate::vm_translator::translation_error;
-use crate::parser::CommandType::*;
 
 
 pub struct CodeWriter {
@@ -42,8 +41,8 @@ impl CodeWriter {
 
 
         match command.get_command_type() {
-            Arithmetic => self.translate_arithmetic(command),
-            Pop | Push => self.translate_push_pop(command),
+            CommandType::Arithmetic => self.translate_arithmetic(command),
+            CommandType::Push => self.translate_push(command),
             _ => println!("Soz, not implemented yet...")
         }
     
@@ -138,29 +137,24 @@ impl CodeWriter {
         self.write_strings(&vec!["@SP", "A=M-1", arith_command]);
     }
 
-    fn translate_push_pop(&mut self, command: &Command) {
+    fn translate_push(&mut self, command: &Command) {
         // Translates push_pop command
-        println!("Translating push / pop command");
+        println!("Translating push command");
 
-        // Which mem segment are we working with
         match command.get_arg1().as_str() {
-            "argument" | "local" |
-            "this      | that" => {
-                if let Push = command.get_command_type() {
-                    self.generic_mem_push(&command);
-                } else {
-                    println!("POP not implemented")
-                }
-            },
-            "static"           => println!("static not implemented"),
-            "constant"         => self.pushpop_constant(command),
-            "pointer"          => println!("pointer not implemented"),
-            "temp"             => println!("temp not implemented"),
-            _                  => translation_error(&format!("Invalid memory location: {}", command.get_arg1()))
+            "argument" => println!("argument not implemented"),
+            "local"    => println!("local not implemented"),
+            "this"     => println!("this not implemented"),
+            "that"     => println!("that not implemented"),
+            "static"   => println!("static not implemented"),
+            "constant" => self.push_constant(command),
+            "pointer"  => println!("pointer not implemented"),
+            "temp"     => println!("temp not implemented"),
+            _          => translation_error(&format!("Invalid memory location: {}", command.get_arg1()))
         };
     }
 
-    fn pushpop_constant(&mut self, command: &Command) {
+    fn push_constant(&mut self, command: &Command) {
         /*
          *   @<constant>
          *   D=A
@@ -198,11 +192,11 @@ impl CodeWriter {
     }
 
 
-    fn generic_mem_push(&mut self, command: &Command) {
+    fn generic_mem_push(&mut self, mem_seg: &str, index: &str) {
         /*  I think most the code for local, argument, this and that will be the same
          *  Code for 'pop' will be similar but in reverse
          *  EXAMPLE (push local <index>) 
-         *      @LCL        // This will change depending on the segment
+         *      @LCL        // This will change depending on the segment (mem_seg)
          *      D=A
          *      @<index>
          *      A=D+A       // M=[LCL+<index>]
@@ -212,6 +206,9 @@ impl CodeWriter {
          *      M=D
          *      SP++
          */
+        let index_label = &format!("@{}", index);
+        self.write_strings(&vec![mem_seg, "D=A"]);
+
     }
 
 
