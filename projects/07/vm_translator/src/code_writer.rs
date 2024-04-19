@@ -1,5 +1,9 @@
 /* ==================================================
  * Generates assembly code from the parsed VM command.
+ * 
+ * One optimisation could be to have a command buffer
+ * which stores all commands as an array in memory 
+ * instead of constantly writing to the output file?
  * ================================================== */
 
 #![allow(non_snake_case)]
@@ -56,8 +60,8 @@ impl CodeWriter {
             "eq"  => self.compare_arithmetic("D;JEQ"),
             "gt"  => self.compare_arithmetic("D;JLT"),
             "lt"  => self.compare_arithmetic("D;JGT"),
-            "and" => self.two_var_arithmetic("D&M"),
-            "or"  => self.two_var_arithmetic("D|M"),
+            "and" => self.two_var_arithmetic("M=D&M"),
+            "or"  => self.two_var_arithmetic("M=D|M"),
             "not" => self.write_strings(&vec!["@SP", "A=M-1", "M=!M"]),
             _     => translation_error(&format!("Bad arithmetic command {}", command.get_arg1()))
         };
@@ -226,4 +230,3 @@ impl CodeWriter {
         }
     }
 }
-
