@@ -141,11 +141,19 @@ impl CodeWriter {
         // Translates push_pop command
         println!("Translating push command");
 
+        let index = if let Some(i) = command.get_arg2() {
+            i
+        } else {
+            translation_error(
+                &format!("No index was given: push {}", command.get_arg1())
+            )
+        };
+
         match command.get_arg1().as_str() {
-            "argument" => println!("argument not implemented"),
-            "local"    => println!("local not implemented"),
-            "this"     => println!("this not implemented"),
-            "that"     => println!("that not implemented"),
+            "argument" => self.generic_mem_push("@ARG", index),
+            "local"    => self.generic_mem_push("@LCL", index),
+            "this"     => self.generic_mem_push("@THIS", index),
+            "that"     => self.generic_mem_push("@THAT", index),
             "static"   => println!("static not implemented"),
             "constant" => self.push_constant(command),
             "pointer"  => println!("pointer not implemented"),
@@ -191,7 +199,6 @@ impl CodeWriter {
         self.modify_SP(true);
     }
 
-
     fn generic_mem_push(&mut self, mem_seg: &str, index: &str) {
         /*  I think most the code for local, argument, this and that will be the same
          *  Code for 'pop' will be similar but in reverse
@@ -207,8 +214,16 @@ impl CodeWriter {
          *      SP++
          */
         let index_label = &format!("@{}", index);
-        self.write_strings(&vec![mem_seg, "D=A"]);
+        self.write_strings(&vec![mem_seg, "D=A", index_label,
+                                 "A=D+A", "D=M", "@SP", "A=M",
+                                 "M=D"]);
+        self.modify_SP(true);
+    }
 
+    fn generic_mem_pop(&mut self, mem_seg: &str, index: &str) {
+        
+
+        
     }
 
 
