@@ -42,30 +42,77 @@ impl CodeWriter {
 
         match command.get_command_type() {
             CommandType::Arithmetic => self.translate_arithmetic(command),
-            CommandType::Push => self.translate_push(command),
-            _ => println!("Soz, not implemented yet...")
+            CommandType::Push       => self.translate_push(command),
+            CommandType::Pop        => self.translate_pop(command),
+            _                       => println!("Soz, not implemented yet...")
         }
     
     }
 
     fn translate_arithmetic(&mut self, command: &Command) {
-        // Translates arithmetic command
         println!("Translating arithmetic command");
         
         match command.get_arg1().as_str() {
             "add" => self.two_var_arithmetic("M=M+D"),
             "sub" => self.two_var_arithmetic("M=M-D"),
-            "neg" => self.write_strings(&vec!["@SP", "A=M-1", "M=-M"]),
+            "neg" => self.write_strings(&["@SP", "A=M-1", "M=-M"]),
             "eq"  => self.compare_arithmetic("D;JEQ"),
             "gt"  => self.compare_arithmetic("D;JLT"),
             "lt"  => self.compare_arithmetic("D;JGT"),
             "and" => self.two_var_arithmetic("M=D&M"),
             "or"  => self.two_var_arithmetic("M=D|M"),
-            "not" => self.write_strings(&vec!["@SP", "A=M-1", "M=!M"]),
+            "not" => self.write_strings(&["@SP", "A=M-1", "M=!M"]),
             _     => translation_error(&format!("Bad arithmetic command {}", command.get_arg1()))
         };
     }
 
+    fn translate_push(&mut self, command: &Command) {
+        println!("Translating push command");
+
+        let index = if let Some(i) = command.get_arg2() {
+            i
+        } else {
+            translation_error(
+                &format!("No index was given: push {}", command.get_arg1())
+            )
+        };
+
+        match command.get_arg1().as_str() {
+            "argument" => self.generic_mem_push("@ARG", index),
+            "local"    => self.generic_mem_push("@LCL", index),
+            "this"     => self.generic_mem_push("@THIS", index),
+            "that"     => self.generic_mem_push("@THAT", index),
+            "static"   => println!("static not implemented"),
+            "constant" => self.push_constant(command),
+            "pointer"  => println!("pointer not implemented"),
+            "temp"     => println!("temp not implemented"),
+            _          => translation_error(&format!("Invalid memory location: {}", command.get_arg1()))
+        };
+    }
+
+    fn translate_pop(&mut self, command: &Command) {
+        println!("Translating pop command");
+
+        let index = if let Some(i) = command.get_arg2() {
+            i
+        } else {
+            translation_error(
+                &format!("No index was given: pop {}", command.get_arg1())
+            )
+        };
+
+        match command.get_arg1().as_str() {
+            "argument" => self.generic_mem_pop("@ARG", index),
+            "local"    => self.generic_mem_pop("@LCL", index),
+            "this"     => self.generic_mem_pop("@THIS", index),
+            "that"     => self.generic_mem_pop("@THAT", index),
+            "static"   => println!("static not implemented"),
+            "constant" => translation_error("Can't pop to 'constant' memory segment."),
+            "pointer"  => println!("pointer not implemented"),
+            "temp"     => println!("temp not implemented"),
+            _          => translation_error(&format!("Invalid memory location: {}", command.get_arg1()))
+        };
+    }
     fn compare_arithmetic(&mut self, comp: &str) {
         /*
          *  Handles gt, lt and eq. 
@@ -99,20 +146,20 @@ impl CodeWriter {
         let true_label     = format!("true_{}", self.comp_count);
         let comp_end_label = format!("comp_end_{}", self.comp_count);
 
-        self.write_strings(&vec!["@SP", "A=M-1", "D=M"]);
+        self.write_strings(&["@SP", "A=M-1", "D=M"]);
         self.modify_SP(false);
-        self.write_strings(&vec!["@SP", "A=M-1", "D=D-M"]);
+        self.write_strings(&["@SP", "A=M-1", "D=D-M"]);
         
         self.write_string(&format!("@{}", true_label));
         self.write_string(comp);
         // Store false
-        self.write_strings(&vec!["@SP", "A=M-1", "M=0"]);
+        self.write_strings(&["@SP", "A=M-1", "M=0"]);
         self.write_string(&format!("@{}", comp_end_label));
         self.write_string("0;JMP");
 
         // Store true
         self.write_string(&format!("({})", true_label));
-        self.write_strings(&vec!["@SP", "A=M-1", "M=-1"]);
+        self.write_strings(&["@SP", "A=M-1", "M=-1"]);
 
         self.write_string(&format!("({})", comp_end_label));
         self.comp_count += 1;
@@ -132,34 +179,9 @@ impl CodeWriter {
          *      ------ Everthing above this is generic
          *      M=M+D   <-- arith_command
          */
-        self.write_strings(&vec!["@SP", "A=M-1","D=M"]);
+        self.write_strings(&["@SP", "A=M-1","D=M"]);
         self.modify_SP(false);                                     // SP--
-        self.write_strings(&vec!["@SP", "A=M-1", arith_command]);
-    }
-
-    fn translate_push(&mut self, command: &Command) {
-        // Translates push_pop command
-        println!("Translating push command");
-
-        let index = if let Some(i) = command.get_arg2() {
-            i
-        } else {
-            translation_error(
-                &format!("No index was given: push {}", command.get_arg1())
-            )
-        };
-
-        match command.get_arg1().as_str() {
-            "argument" => self.generic_mem_push("@ARG", index),
-            "local"    => self.generic_mem_push("@LCL", index),
-            "this"     => self.generic_mem_push("@THIS", index),
-            "that"     => self.generic_mem_push("@THAT", index),
-            "static"   => println!("static not implemented"),
-            "constant" => self.push_constant(command),
-            "pointer"  => println!("pointer not implemented"),
-            "temp"     => println!("temp not implemented"),
-            _          => translation_error(&format!("Invalid memory location: {}", command.get_arg1()))
-        };
+        self.write_strings(&["@SP", "A=M-1", arith_command]);
     }
 
     fn push_constant(&mut self, command: &Command) {
@@ -190,7 +212,7 @@ impl CodeWriter {
 
         // Store the constant in D
         let label = format!("@{}", constant);
-        self.write_strings(&vec![&label, "D=A"]);
+        self.write_strings(&[&label, "D=A"]);
 
         // Deref SP and inc sp
         self.deref_SP();
@@ -214,22 +236,62 @@ impl CodeWriter {
          *      SP++
          */
         let index_label = &format!("@{}", index);
-        self.write_strings(&vec![mem_seg, "D=A", index_label,
-                                 "A=D+A", "D=M", "@SP", "A=M",
-                                 "M=D"]);
+        self.write_strings(&[mem_seg, "D=A", index_label,
+                            "A=D+A", "D=M", "@SP", "A=M",
+                            "M=D"]);
         self.modify_SP(true);
     }
 
     fn generic_mem_pop(&mut self, mem_seg: &str, index: &str) {
-        
+        /*
+         *  It's not where ya binnnnn,
+         *  but where you gonna goooooooooo...
+         *  
+         *  - Store the value of mem_seg + index in R13
+         *  - Grab the pop top of the stack to D
+         *  - Store D in Ram[R13]
+         * 
+         *      @<index> 
+         *      D=A
+         *      @<mem_seg>
+         *      D=A+D
+         *      @R13
+         *      M=D        // Store mem_seg + index in R13
+         *      @SP
+         *      A=M-1
+         *      D=M
+         *      SP --
+         *      @R13
+         *      A=M
+         *      M=D
+         *      
+         */
 
+        // Store mem_seg + index in R13
+        let index_label   = &format!("@{}", index);
+        let mem_seg_label = &format!("@{}", mem_seg);
         
+        self.write_strings(&[
+            index_label,
+            "D=A",
+            mem_seg_label,
+            "D=A+D",
+            "@R13",
+            "M=D",              // store mem_seg in R13
+            "@SP",
+            "A=M-1",
+            "D=M"
+        ]);
+        self.modify_SP(false);  // SP--
+        self.write_strings(&[
+            "@R13",
+            "A=M",
+            "M=D"
+        ]);
     }
 
 
     fn deref_SP(&mut self) {
-        // @SP
-        // A=M
         let strings = vec!["@SP", "A=M"];
         self.write_strings(&strings);
     }
