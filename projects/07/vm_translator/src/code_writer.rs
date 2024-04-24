@@ -72,9 +72,7 @@ impl CodeWriter {
         let index = if let Some(i) = command.get_arg2() {
             i
         } else {
-            translation_error(
-                &format!("No index was given: push {}", command.get_arg1())
-            )
+            translation_error(&format!("No index was given: push {}", command.get_arg1()))
         };
 
         match command.get_arg1().as_str() {
@@ -85,7 +83,7 @@ impl CodeWriter {
             "static"   => println!("static not implemented"),
             "constant" => self.push_constant(command),
             "pointer"  => println!("pointer not implemented"),
-            "temp"     => println!("temp not implemented"),
+            "temp"     => self.push_temp(index),
             _          => translation_error(&format!("Invalid memory location: {}", command.get_arg1()))
         };
     }
@@ -109,10 +107,12 @@ impl CodeWriter {
             "static"   => println!("static not implemented"),
             "constant" => translation_error("Can't pop to 'constant' memory segment."),
             "pointer"  => println!("pointer not implemented"),
-            "temp"     => println!("temp not implemented"),
+            "temp"     => self.pop_temp(index),
             _          => translation_error(&format!("Invalid memory location: {}", command.get_arg1()))
         };
     }
+
+
     fn compare_arithmetic(&mut self, comp: &str) {
         /*
          *  Handles gt, lt and eq. 
@@ -196,16 +196,7 @@ impl CodeWriter {
         
         // Parse constant
         let constant = if let Some(c) = command.get_arg2() {
-            match str::parse::<u32>(c) {
-                Ok(n) => {
-                    if n < 32768 {
-                        c
-                    } else {
-                        translation_error(&format!("Max constant exceeded: {}. Constant should be less than 32768.", c));
-                    }
-                },
-                Err(_) => translation_error(&format!("{} is not an unsigned integer.", c))
-            }
+            c   // Assume that c is an unsigned integer... within the correct range
         } else {
             translation_error("Push/Pop command requires a second argument.\n'push constant <constant>")
         };
@@ -222,11 +213,11 @@ impl CodeWriter {
     }
 
     fn generic_mem_push(&mut self, mem_seg: &str, index: &str) {
-        /*  I think most the code for local, argument, this and that will be the same
-         *  Code for 'pop' will be similar but in reverse
+        /*  
+         *  
          *  EXAMPLE (push local <index>) 
          *      @LCL        // This will change depending on the segment (mem_seg)
-         *      D=A
+         *      D=M
          *      @<index>
          *      A=D+A       // M=[LCL+<index>]
          *      D=M
@@ -236,10 +227,46 @@ impl CodeWriter {
          *      SP++
          */
         let index_label = &format!("@{}", index);
-        self.write_strings(&[mem_seg, "D=A", index_label,
-                            "A=D+A", "D=M", "@SP", "A=M",
-                            "M=D"]);
+        self.write_strings(&[
+            mem_seg,
+            "D=M",
+            index_label,
+            "A=D+A",        // M=RAM[*LCL+<index>]
+            "D=M",
+            "@SP",
+            "A=M",
+            "M=D"
+        ]);
         self.modify_SP(true);
+    }
+
+
+    fn push_temp(&mut self, index: &str) {
+        /*  Temp = RAM[5-12]
+         *  Assume that index is in the right range...
+         *  
+         *      @<index>
+         *      D=A
+         *      @5      // Base of temp
+         *      A=D+A   // M = RAM[index+5]
+         *      D=M
+         *      @SP
+         *      A=M-1
+         *      M=D
+         *      SP++
+         */
+        let index_label = &format!("@{}", index);
+        self.write_strings(&[
+            index_label,
+            "D=A",
+            "@5",       // Base of temp
+            "A=D+A",    // M = RAM[index+5]
+            "D=M",
+            "@SP",
+            "A=M-1",
+            "M=D"
+        ]);
+        self.modify_SP(true)
     }
 
     fn generic_mem_pop(&mut self, mem_seg: &str, index: &str) {
@@ -253,8 +280,8 @@ impl CodeWriter {
          * 
          *      @<index> 
          *      D=A
-         *      @<mem_seg>
-         *      D=A+D
+         *      @<mem_seg>      // Since mem_seg is a pointer, we want the value at RAM[mem_seg]
+         *      D=M+D           
          *      @R13
          *      M=D        // Store mem_seg + index in R13
          *      @SP
@@ -275,14 +302,14 @@ impl CodeWriter {
             index_label,
             "D=A",
             mem_seg_label,
-            "D=A+D",
+            "D=M+D",            // D=RAM[<mem_seg>]+index
             "@R13",
             "M=D",              // store mem_seg in R13
             "@SP",
             "A=M-1",
             "D=M"
         ]);
-        self.modify_SP(false);  // SP--
+        self.modify_SP(false);  
         self.write_strings(&[
             "@R13",
             "A=M",
@@ -290,8 +317,30 @@ impl CodeWriter {
         ]);
     }
 
+    fn pop_temp(&mut self, index: &str) {
+        // Similar to generic_pop but we don't have to deref mem_seg
+        let index_label = &format!("@{}", index);
+        self.write_strings(&[
+            index_label,
+            "D=A",
+            "@5",
+            "D=D+A",
+            "@R13",
+            "M=D",
+            "@SP",
+            "A=M-1",
+            "D=M"
+        ]);
+        self.modify_SP(false);
+        self.write_strings(&[
+            "@R13",
+            "A=M",
+            "M=D"
+        ])
+    }
 
-    fn deref_SP(&mut self) {
+
+    fn deref_SP(&mut self) {                // TODO Remove this function
         let strings = vec!["@SP", "A=M"];
         self.write_strings(&strings);
     }
