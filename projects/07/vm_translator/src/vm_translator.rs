@@ -26,20 +26,21 @@ pub fn vm_translate(input_file: String) {
         panic!("Input file requires .vm extension")
     };
 
-    println!("Output file: {}", output_file);
-
+    
     let mut parser      = parser::Parser::new(input_file);
-    let mut code_writer = code_writer::CodeWriter::new(output_file);
-
+    let mut code_writer = code_writer::CodeWriter::new(&output_file);
+    
     while parser.has_more_commands() {
         parser.advance();  // Update parser.currentCommand
-
+        
         if let Some(command) = parser.get_current_command() {
-
+            
             code_writer.translate_command(command)
         }
-
+        
     }
+
+    println!("Successfully translated source VM file\nOutput -> {}", output_file);
 }
 
 pub fn translation_error(msg: &str) -> ! {

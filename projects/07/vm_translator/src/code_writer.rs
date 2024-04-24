@@ -17,12 +17,11 @@ use crate::vm_translator::translation_error;
 
 pub struct CodeWriter {
     writer: BufWriter<File>,
-    
     comp_count: u32     // No. of 'store true' labels.
 }
 
 impl CodeWriter {
-    pub fn new(output_file: String) -> CodeWriter {
+    pub fn new(output_file: &String) -> CodeWriter {
         let file = File::create(output_file)
                                .expect("Couldn't open output file");
 
@@ -33,13 +32,8 @@ impl CodeWriter {
 
     }
 
+
     pub fn translate_command(&mut self, command: &Command) {
-        match command.get_arg2() {
-            Some(arg2) => println!("Arg1: {}, Arg2: {}", command.get_arg1(), arg2),
-            None => println!("Arg1: {}, Arg2: None", command.get_arg1()),
-        }
-
-
         match command.get_command_type() {
             CommandType::Arithmetic => self.translate_arithmetic(command),
             CommandType::Push       => self.translate_push(command),
@@ -49,9 +43,8 @@ impl CodeWriter {
     
     }
 
+
     fn translate_arithmetic(&mut self, command: &Command) {
-        println!("Translating arithmetic command");
-        
         match command.get_arg1().as_str() {
             "add" => self.two_var_arithmetic("M=M+D"),
             "sub" => self.two_var_arithmetic("M=M-D"),
@@ -66,9 +59,8 @@ impl CodeWriter {
         };
     }
 
-    fn translate_push(&mut self, command: &Command) {
-        println!("Translating push command");
 
+    fn translate_push(&mut self, command: &Command) {
         let index = if let Some(i) = command.get_arg2() {
             i
         } else {
@@ -88,9 +80,8 @@ impl CodeWriter {
         };
     }
 
-    fn translate_pop(&mut self, command: &Command) {
-        println!("Translating pop command");
 
+    fn translate_pop(&mut self, command: &Command) {
         let index = if let Some(i) = command.get_arg2() {
             i
         } else {
@@ -167,30 +158,19 @@ impl CodeWriter {
 
 
     fn two_var_arithmetic(&mut self, arith_command: &str) {
-        /*
-         *  Most of the arithmetics have the same code:
-         *  EXAMPLE (ADD)
-         *      @SP
-         *      A=M-1
-         *      D=M   // Store y in D
-         *      SP--
-         *      @SP
-         *      A=M-1
-         *      ------ Everthing above this is generic
-         *      M=M+D   <-- arith_command
-         */
         self.write_strings(&[
             "@SP",
             "A=M-1",
-            "D=M"
+            "D=M"       // Store y in D
         ]);
-        self.modify_SP(false);                                     // SP--
+        self.modify_SP(false);
         self.write_strings(&[
             "@SP",
             "A=M-1",
             arith_command
         ]);
     }
+
 
     fn push_constant(&mut self, command: &Command) {
         /*
@@ -210,33 +190,22 @@ impl CodeWriter {
         };
 
         // Store the constant in D
-        let label = format!("@{}", constant);
-        self.write_strings(&[&label, "D=A"]);
-
-        // Deref SP and inc sp
-        self.deref_SP();
-        self.write_string("M=D");
-
+        let label = &format!("@{}", constant);
+        self.write_strings(&[
+            label,
+            "D=A",
+            "@SP",
+            "A=M",
+            "M=D"
+        ]);
         self.modify_SP(true);
     }
 
+
     fn generic_mem_push(&mut self, mem_seg: &str, index: &str) {
-        /*  
-         *  
-         *  EXAMPLE (push local <index>) 
-         *      @LCL        // This will change depending on the segment (mem_seg)
-         *      D=M
-         *      @<index>
-         *      A=D+A       // M=[LCL+<index>]
-         *      D=M
-         *      @SP
-         *      A=M
-         *      M=D
-         *      SP++
-         */
         let index_label = &format!("@{}", index);
         self.write_strings(&[
-            mem_seg,
+            mem_seg,        // @LCL for example
             "D=M",
             index_label,
             "A=D+A",        // M=RAM[*LCL+<index>]
@@ -251,7 +220,7 @@ impl CodeWriter {
 
     fn push_base_index(&mut self, index: &str, base: &str) {
         /*
-         *  Temp = RAM[5-12], pointer=RAM[3-4]
+         *  Temp = RAM[5-12], pointer=RAM[3-4], static=RAM[16-255]
          *  Assume that index is in the right range...
          * 
          */
@@ -271,6 +240,7 @@ impl CodeWriter {
         self.modify_SP(true)
     }
 
+
     fn generic_mem_pop(&mut self, mem_seg: &str, index: &str) {
         /*
          *  It's not where ya binnnnn,
@@ -280,23 +250,8 @@ impl CodeWriter {
          *  - Grab the pop top of the stack to D
          *  - Store D in Ram[R13]
          * 
-         *      @<index> 
-         *      D=A
-         *      @<mem_seg>      // Since mem_seg is a pointer, we want the value at RAM[mem_seg]
-         *      D=M+D           
-         *      @R13
-         *      M=D        // Store mem_seg + index in R13
-         *      @SP
-         *      A=M-1
-         *      D=M
-         *      SP --
-         *      @R13
-         *      A=M
-         *      M=D
-         *      
          */
 
-        // Store mem_seg + index in R13
         let index_label   = &format!("@{}", index);
         
         self.write_strings(&[
@@ -318,9 +273,9 @@ impl CodeWriter {
         ]);
     }
 
+
     fn pop_base_index(&mut self, index: &str, base: &str) {
         // Similar to generic_pop but we don't have to deref mem_seg
-
         let index_label = &format!("@{}", index);
         self.write_strings(&[
             index_label,
@@ -342,12 +297,6 @@ impl CodeWriter {
     }
 
 
-    fn deref_SP(&mut self) {                // TODO Remove this function
-        let strings = vec!["@SP", "A=M"];
-        self.write_strings(&strings);
-    }
-
-
     fn modify_SP(&mut self, inc: bool) {
         // Incrementing / Decrementing the value of stack pointer
         let mut strings = vec!["@SP"];
@@ -360,6 +309,7 @@ impl CodeWriter {
         }
         self.write_strings(&strings);
     }
+
 
     fn write_string(&mut self, string: &str) {
         // Take a string and write that shit to the output file
