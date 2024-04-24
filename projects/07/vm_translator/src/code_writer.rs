@@ -179,9 +179,17 @@ impl CodeWriter {
          *      ------ Everthing above this is generic
          *      M=M+D   <-- arith_command
          */
-        self.write_strings(&["@SP", "A=M-1","D=M"]);
+        self.write_strings(&[
+            "@SP",
+            "A=M-1",
+            "D=M"
+        ]);
         self.modify_SP(false);                                     // SP--
-        self.write_strings(&["@SP", "A=M-1", arith_command]);
+        self.write_strings(&[
+            "@SP",
+            "A=M-1",
+            arith_command
+        ]);
     }
 
     fn push_constant(&mut self, command: &Command) {
@@ -263,7 +271,7 @@ impl CodeWriter {
             "A=D+A",    // M = RAM[index+5]
             "D=M",
             "@SP",
-            "A=M-1",
+            "A=M",
             "M=D"
         ]);
         self.modify_SP(true)
@@ -296,12 +304,11 @@ impl CodeWriter {
 
         // Store mem_seg + index in R13
         let index_label   = &format!("@{}", index);
-        let mem_seg_label = &format!("@{}", mem_seg);
         
         self.write_strings(&[
             index_label,
             "D=A",
-            mem_seg_label,
+            mem_seg,
             "D=M+D",            // D=RAM[<mem_seg>]+index
             "@R13",
             "M=D",              // store mem_seg in R13
