@@ -82,8 +82,8 @@ impl CodeWriter {
             "that"     => self.generic_mem_push("@THAT", index),
             "static"   => println!("static not implemented"),
             "constant" => self.push_constant(command),
-            "pointer"  => println!("pointer not implemented"),
-            "temp"     => self.push_temp(index),
+            "pointer"  => self.push_temp_ptr(index, false),
+            "temp"     => self.push_temp_ptr(index, true),
             _          => translation_error(&format!("Invalid memory location: {}", command.get_arg1()))
         };
     }
@@ -106,8 +106,8 @@ impl CodeWriter {
             "that"     => self.generic_mem_pop("@THAT", index),
             "static"   => println!("static not implemented"),
             "constant" => translation_error("Can't pop to 'constant' memory segment."),
-            "pointer"  => println!("pointer not implemented"),
-            "temp"     => self.pop_temp(index),
+            "pointer"  => self.pop_temp_ptr(index, false),
+            "temp"     => self.pop_temp_ptr(index, true),
             _          => translation_error(&format!("Invalid memory location: {}", command.get_arg1()))
         };
     }
@@ -249,26 +249,21 @@ impl CodeWriter {
     }
 
 
-    fn push_temp(&mut self, index: &str) {
-        /*  Temp = RAM[5-12]
+    fn push_temp_ptr(&mut self, index: &str, temp: bool) {
+        /*
+         *  Temp = RAM[5-12], pointer=RAM[3-4]
          *  Assume that index is in the right range...
-         *  
-         *      @<index>
-         *      D=A
-         *      @5      // Base of temp
-         *      A=D+A   // M = RAM[index+5]
-         *      D=M
-         *      @SP
-         *      A=M-1
-         *      M=D
-         *      SP++
+         * 
          */
+
         let index_label = &format!("@{}", index);
+        let base = if temp {"@5"} else {"@3"};
+
         self.write_strings(&[
             index_label,
             "D=A",
-            "@5",       // Base of temp
-            "A=D+A",    // M = RAM[index+5]
+            base,       // Base of temp/ptr (5/3)
+            "A=D+A",    // M = RAM[index+base]
             "D=M",
             "@SP",
             "A=M",
@@ -324,13 +319,15 @@ impl CodeWriter {
         ]);
     }
 
-    fn pop_temp(&mut self, index: &str) {
+    fn pop_temp_ptr(&mut self, index: &str, temp: bool) {
         // Similar to generic_pop but we don't have to deref mem_seg
+
         let index_label = &format!("@{}", index);
+        let base = if temp {"@5"} else {"@3"};
         self.write_strings(&[
             index_label,
             "D=A",
-            "@5",
+            base,
             "D=D+A",
             "@R13",
             "M=D",
