@@ -10,6 +10,7 @@
 
 use std::io::{BufWriter, Write};
 use std::fs::File;
+use std::path::Path;
 
 use crate::parser::{Command, CommandType};
 use crate::vm_translator::translation_error;
@@ -17,7 +18,8 @@ use crate::vm_translator::translation_error;
 
 pub struct CodeWriter {
     writer: BufWriter<File>,
-    comp_count: u32     // No. of 'store true' labels.
+    comp_count: u32,             // No. of 'store true' labels.
+    file_name: String            // Name of the file without the extension
 }
 
 impl CodeWriter {
@@ -25,9 +27,15 @@ impl CodeWriter {
         let file = File::create(output_file)
                                .expect("Couldn't open output file");
 
+        let path = Path::new(output_file);
+        let file_name = path.file_stem()
+                            .and_then(|f| f.to_str())
+                            .unwrap_or_default();
+
         CodeWriter {
             writer: BufWriter::new(file),
             comp_count: 0,
+            file_name: file_name.to_string()
         }
 
     }
@@ -72,7 +80,7 @@ impl CodeWriter {
             "local"    => self.generic_mem_push("@LCL", index),
             "this"     => self.generic_mem_push("@THIS", index),
             "that"     => self.generic_mem_push("@THAT", index),
-            "static"   => self.push_base_index(index, "@16"),
+            "static"   => self.push_static(index),
             "constant" => self.push_constant(command),
             "pointer"  => self.push_base_index(index, "@3"),
             "temp"     => self.push_base_index(index, "@5"),
@@ -95,7 +103,7 @@ impl CodeWriter {
             "local"    => self.generic_mem_pop("@LCL", index),
             "this"     => self.generic_mem_pop("@THIS", index),
             "that"     => self.generic_mem_pop("@THAT", index),
-            "static"   => self.pop_base_index(index, "@16"),
+            "static"   => self.pop_static(index),
             "constant" => translation_error("Can't pop to 'constant' memory segment."),
             "pointer"  => self.pop_base_index(index, "@3"),
             "temp"     => self.pop_base_index(index, "@5"),
@@ -202,6 +210,27 @@ impl CodeWriter {
     }
 
 
+    fn push_static(&mut self, index: &str) {
+        /*
+         *  push static <index>
+         *  output:
+         *      @<file_name>.<index>
+         *      D=M
+         *      ...Push D to stack...
+         *  
+         */
+        let var_label = &format!("@{}.{}", self.file_name, index);
+        self.write_strings(&[
+            var_label,
+            "D=M",
+            "@SP",
+            "A=M",
+            "M=D"
+        ]);
+        self.modify_SP(true);
+    }
+
+
     fn generic_mem_push(&mut self, mem_seg: &str, index: &str) {
         let index_label = &format!("@{}", index);
         self.write_strings(&[
@@ -238,6 +267,29 @@ impl CodeWriter {
             "M=D"
         ]);
         self.modify_SP(true)
+    }
+
+
+    fn pop_static(&mut self, index: &str) {
+        /*
+         *  pop static index
+         *  Output:
+         *      ...Store the top of the stack in D...
+         *      @<file_name>.<index>
+         *      M=D
+         */
+        let var_label = &format!("@{}.{}", self.file_name, index);
+
+        self.write_strings(&[
+            "@SP",
+            "A=M-1",
+            "D=M"
+        ]);
+        self.modify_SP(false);
+        self.write_strings(&[
+            var_label,
+            "M=D"
+        ]);
     }
 
 
