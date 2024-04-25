@@ -249,7 +249,7 @@ impl CodeWriter {
 
     fn push_base_index(&mut self, index: &str, base: &str) {
         /*
-         *  Temp = RAM[5-12], pointer=RAM[3-4], static=RAM[16-255]
+         *  Temp = RAM[5-12], pointer=RAM[3-4]
          *  Assume that index is in the right range...
          * 
          */
@@ -327,7 +327,6 @@ impl CodeWriter {
 
 
     fn pop_base_index(&mut self, index: &str, base: &str) {
-        // Similar to generic_pop but we don't have to deref mem_seg
         let index_label = &format!("@{}", index);
         self.write_strings(&[
             index_label,
