@@ -29,6 +29,7 @@ const MEM_SEGMENTS: &[&str] = &[
    "pointer",  "temp"
 ];
 
+
 #[derive(Clone, Copy)]
 pub enum CommandType {
    Arithmetic,
@@ -51,9 +52,7 @@ pub struct Command {
 pub struct Parser {
    current_command:     Option<Command>,
    reader:              BufReader<File>,
-   has_more_commands:   bool,
-   arithmetic_commands: [&str; 9],
-   mem_segments:        [&str; 8]
+   has_more_commands:   bool
 }
 
 
@@ -64,20 +63,10 @@ impl Parser {
       Parser {
          current_command: None,
          reader: BufReader::new(file),
-         has_more_commands: true,
-         arithmetic_commands: [
-            "add", "sub", "neg", 
-            "eq",  "gt",  "lt",
-            "and", "or",  "not"
-         ],
-         mem_segments: [
-            "argument", "local",
-            "static",   "constant",
-            "this",     "that",
-            "pointer",  "temp"
-         ]
+         has_more_commands: true
       }
    }
+
 
    pub fn advance(&mut self) {
       // ======================================================
@@ -130,40 +119,114 @@ impl Parser {
 
       // Get the first word in the command
       let c = if let Some(c) = parts.first() {
-         c.to_string()
+         *c
       } else {
          translation_error(&format!("Invalid command: {}", command));
       };
-      
-      match parts.len() {
-         1 => {
 
-            if !self.arithmetic_commands.contains(&c) {
-               translation_error(&format!("Invalid command: {}", command));
-            }
-
-            self.current_command = Some(Command {
-               arg1: c,
+      // --- Arithmetic ---
+      if ARITH_COMMANDS.contains(&c) {
+         self.current_command = Some(
+            Command {
+               arg1: c.to_string(),
                arg2: None,
                command_type: CommandType::Arithmetic
-            })
-         }
-         3 => {
-            if c == "push" || c == "pop" {
-               let segment: String = parts.get(1).unwrap().to_string();
-               let index:   String = parts.get(2).unwrap().to_string();
+            }
+         );
+         return
+      }
+
+      match c {
+         "push" | "pop" => {
+               let segment: String = self.get_string_from_parts(1, &parts, "push/pop command requires a memory segment.");
+               let index:   String = self.get_string_from_parts(2, &parts, "push/pop command requires an index.");
 
                self.parse_push_pop(
                   if c == "push" {CommandType::Push} else {CommandType::Pop},
-                  segment, 
+                  segment,
                   index
-               );
-            }
+               )
          },
-         _ => translation_error(&format!("Invalid command: {}", command))
-      }
+         "label" => {
+            let label_name = self.get_string_from_parts(1, &parts, "'label' command requires a name.");
 
+            self.current_command = Some(
+               Command {
+                  arg1: label_name,
+                  arg2: None,
+                  command_type: CommandType::Label
+               }
+            )
+         },
+         "if-goto" => {
+            let label_name = self.get_string_from_parts(1, &parts, "'if-goto' command requires a label name.");
+
+            self.current_command = Some(
+               Command {
+                  arg1: label_name,
+                  arg2: None,
+                  command_type: CommandType::If
+               }
+            )
+         },
+         "goto" => {
+            let label_name = self.get_string_from_parts(1, &parts, "'goto' command requires a label name.");
+
+            self.current_command = Some(
+               Command {
+                  arg1: label_name,
+                  arg2: None,
+                  command_type: CommandType::Goto
+               }
+            )
+         },
+         "function" => {
+            let function_name = self.get_string_from_parts(1, &parts, "'function' command requires a name.");
+            let local_vars    = self.get_string_from_parts(2, &parts, "'function' command requires a local variable count.");
+
+            self.current_command = Some(
+               Command {
+                  arg1: function_name,
+                  arg2: Some(local_vars),
+                  command_type: CommandType::Function
+               }
+            )
+         },
+         "call" => {
+            let function_name = self.get_string_from_parts(1, &parts, "'call' command requires a function name.");
+            let arg_count     = self.get_string_from_parts(2, &parts, "'call' command requires an argument count.");
+
+            self.current_command = Some(
+               Command {
+                  arg1: function_name,
+                  arg2: Some(arg_count),
+                  command_type: CommandType::Call
+               }
+            )
+         },
+         "return" => {
+            self.current_command = Some(
+               Command {
+                  arg1: c.to_string(),  // This should really be None but then that messes errthing up :/
+                  arg2: None,
+                  command_type: CommandType::Return
+               }
+            )
+         },
+         _ => translation_error("Error bad command...")
+      }
    }
+
+   
+   fn get_string_from_parts(&self, index: usize, parts: &[&str], error_msg: &str) -> String {
+      // Should call translation error if there's nothing at the index
+      if let Some(s) = parts.get(index) {
+         s.to_string()
+      } else {
+         translation_error(error_msg)
+      }
+   }
+   
 
    fn parse_push_pop(&mut self, push_pop: CommandType, segment: String, index: String) {
       if !MEM_SEGMENTS.contains(&segment.as_str()) {
@@ -188,7 +251,6 @@ impl Parser {
    pub fn get_current_command(&self) -> Option<&Command> {
       self.current_command.as_ref()
    }
-
 
    fn is_comment(&self, line: &str) -> bool {
       line.trim().starts_with("//")
