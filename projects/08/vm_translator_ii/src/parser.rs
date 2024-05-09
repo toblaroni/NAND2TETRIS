@@ -13,6 +13,7 @@
 use std::io::{BufRead, BufReader};
 use std::fs::File;
 use std::u32;
+use std::fmt;
 
 use crate::vm_translator::translation_error;
 
@@ -42,6 +43,7 @@ pub enum CommandType {
    Push,
    Return 
 }
+
 
 pub struct Command {
    arg1:         String,
@@ -282,5 +284,33 @@ impl Command {
 
    pub fn get_command_type(&self) -> &CommandType {
       &self.command_type
+   }
+}
+
+impl fmt::Display for Command {
+   fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+      write!(
+         f,
+         "Arg1: {}, Arg2: {}, Command Type: {}",
+         self.arg1,
+         self.arg2.as_deref().unwrap_or("None"),
+         self.command_type
+      )
+   }
+}
+
+impl fmt::Display for CommandType {
+   fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+      match self {
+         CommandType::Arithmetic => write!(f, "Arithmetic"),
+         CommandType::Call       => write!(f, "Call"),
+         CommandType::Function   => write!(f, "Function"),
+         CommandType::Goto       => write!(f, "Goto"),
+         CommandType::If         => write!(f, "If"),
+         CommandType::Label      => write!(f, "Label"),
+         CommandType::Pop        => write!(f, "Pop"),
+         CommandType::Push       => write!(f, "Push"),
+         CommandType::Return     => write!(f, "Return")
+      }
    }
 }
