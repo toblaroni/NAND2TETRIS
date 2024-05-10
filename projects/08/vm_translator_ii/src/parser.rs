@@ -140,8 +140,8 @@ impl Parser {
 
       match c {
          "push" | "pop" => {
-               let segment: String = self.get_string_from_parts(1, &parts, "push/pop command requires a memory segment.");
-               let index:   String = self.get_string_from_parts(2, &parts, "push/pop command requires an index.");
+               let segment = self.get_string_from_parts(1, &parts, "push/pop command requires a memory segment.");
+               let index   = self.get_string_from_parts(2, &parts, "push/pop command requires an index.");
 
                self.parse_push_pop(
                   if c == "push" {CommandType::Push} else {CommandType::Pop},
