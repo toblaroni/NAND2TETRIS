@@ -20,19 +20,19 @@ pub fn vm_translate(input: String) {
      * 
      * ================================================================== */
 
-    let files: Vec<String> = handle_input(input);
-
+    let files: Vec<String> = handle_input(&input);
+     
     if files.is_empty() {
         translation_error("Couldn't find any .vm files to translate...")
     }
+        
+    let output_file: String = create_output_file(&input);
+    let mut code_writer     = code_writer::CodeWriter::new(&output_file);   // One Code Writer for every input file
 
     for vm_file in files {
-        let output_file: String = create_output_file(&vm_file);
-
         println!("vm_file: {}, output_File: {}", &vm_file, &output_file);
 
-        let mut parser      = parser::Parser::new(vm_file);
-        let mut code_writer = code_writer::CodeWriter::new(&output_file);
+        let mut parser = parser::Parser::new(vm_file);
         
         while parser.has_more_commands() {
             parser.advance();  // Update parser.currentCommand
@@ -48,12 +48,12 @@ pub fn vm_translate(input: String) {
 }
 
 
-fn handle_input(input: String) -> Vec<String> {
+fn handle_input(input: &String) -> Vec<String> {
     let mut files: Vec<String> = Vec::new();
 
     if input.rfind(".vm").is_some() {
         // Just one vm file
-        files.push(input);
+        files.push(input.clone());
     } else {
         // Folder
         // -- Sureleh there's a better way...
@@ -78,7 +78,7 @@ fn create_output_file(vm_file: &String) -> String {
     if let Some(index) = vm_file.rfind(".vm") {
         vm_file[..index].to_string() + ".asm"
     } else {
-        translation_error(&format!("Couldn't create output .vm file from {}", vm_file))
+        vm_file.to_owned() + ".asm"
     }
 }
 

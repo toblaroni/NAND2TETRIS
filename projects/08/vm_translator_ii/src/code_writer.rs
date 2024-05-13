@@ -41,12 +41,23 @@ impl CodeWriter {
     }
 
 
+    pub fn initialise_ptrs(&mut self) {
+        // SP = 256
+        // call Sys.init
+    }
+
+
     pub fn translate_command(&mut self, command: &Command) {
         match command.get_command_type() {
             CommandType::Arithmetic => self.translate_arithmetic(command),
             CommandType::Push       => self.translate_push(command),
             CommandType::Pop        => self.translate_pop(command),
-            _                       => println!("Soz, not implemented yet...")
+            CommandType::Call       => self.translate_call(command),
+            CommandType::Function   => self.translate_function(command),
+            CommandType::Goto       => self.translate_goto(command),
+            CommandType::If         => self.translate_if(command)
+            CommandType::Label      => self.translate_label(command)
+            CommandType::Return     => self.translate_return(command)
         }
     
     }
@@ -65,6 +76,35 @@ impl CodeWriter {
             "not" => self.write_strings(&["@SP", "A=M-1", "M=!M"]),
             _     => translation_error(&format!("Bad arithmetic command {}", command.get_arg1()))
         };
+    }
+
+
+    fn translate_label(&mut self, command: &Command) {
+
+    }
+
+
+    fn translate_goto(&mut self, command: &Command) {
+
+    }
+
+
+    fn translate_if(&mut self, command: &Command) {
+
+    }
+
+
+    fn translate_call(&mut self, command: &Command) {
+
+    }
+
+    fn translate_return(&mut self, command: &Command) {
+
+    }
+
+
+    fn translate_function(&mut self, command: &Command) {
+
     }
 
 
