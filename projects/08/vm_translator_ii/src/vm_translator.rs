@@ -29,6 +29,7 @@ pub fn vm_translate(input: String) {
     let output_file: String = create_output_file(&input);
     let mut code_writer     = code_writer::CodeWriter::new(&output_file);   // One Code Writer for every input file
 
+    code_writer.init();
     for vm_file in files {
         println!("vm_file: {}, output_File: {}", &vm_file, &output_file);
 

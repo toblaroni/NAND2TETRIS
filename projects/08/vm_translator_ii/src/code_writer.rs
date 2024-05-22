@@ -41,9 +41,13 @@ impl CodeWriter {
     }
 
 
-    pub fn initialise_ptrs(&mut self) {
+    pub fn init(&mut self) {
         // SP = 256
         // call Sys.init
+        self.write_strings(&[
+            "@SP",
+            "M=256"
+        ]);
     }
 
 
