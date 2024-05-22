@@ -14,4 +14,4 @@ function SimpleFunction.test 2
 	add
 	push argument 1
 	sub
-	return
+	return 

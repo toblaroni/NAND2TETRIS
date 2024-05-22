@@ -42,12 +42,13 @@ impl CodeWriter {
 
 
     pub fn init(&mut self) {
-        // SP = 256
-        // call Sys.init
+        // Do I need to initialise ARG, LCL, THIS THAT?
         self.write_strings(&[
             "@SP",
-            "M=256"
+            "M=256" // SP = 256
         ]);
+
+        // call Sys.init
     }
 
 
@@ -59,8 +60,8 @@ impl CodeWriter {
             CommandType::Call       => self.translate_call(command),
             CommandType::Function   => self.translate_function(command),
             CommandType::Goto       => self.translate_goto(command),
-            CommandType::If         => self.translate_if(command)
-            CommandType::Label      => self.translate_label(command)
+            CommandType::If         => self.translate_if(command),
+            CommandType::Label      => self.translate_label(command),
             CommandType::Return     => self.translate_return(command)
         }
     
@@ -82,23 +83,7 @@ impl CodeWriter {
         };
     }
 
-
-    fn translate_label(&mut self, command: &Command) {
-
-    }
-
-
-    fn translate_goto(&mut self, command: &Command) {
-
-    }
-
-
-    fn translate_if(&mut self, command: &Command) {
-
-    }
-
-
-    fn translate_call(&mut self, command: &Command) {
+    fn translate_function(&mut self, command: &Command) {
 
     }
 
@@ -107,9 +92,23 @@ impl CodeWriter {
     }
 
 
-    fn translate_function(&mut self, command: &Command) {
+    fn translate_label(&mut self, command: &Command) {
+    }
+
+
+    fn translate_goto(&mut self, command: &Command) {
+    }
+
+
+    fn translate_if(&mut self, command: &Command) {
+        
+    }
+
+
+    fn translate_call(&mut self, command: &Command) {
 
     }
+
 
 
     fn translate_push(&mut self, command: &Command) {

@@ -2,6 +2,6 @@
 *.DS_Store
 **.out
 **/target
-
+*.pdf
 **.asm
 **.vm
