@@ -18,7 +18,8 @@ use crate::vm_translator::translation_error;
 
 pub struct CodeWriter {
     writer: BufWriter<File>,
-    comp_count: u32,             // No. of 'store true' labels.
+    store_true_count: u32,       // No. of store true labels.
+    return_count: u32,           // No. of return address labels.
     file_name: String            // Name of the file without the extension
 }
 
@@ -34,7 +35,8 @@ impl CodeWriter {
 
         CodeWriter {
             writer: BufWriter::new(file),
-            comp_count: 0,
+            store_true_count: 0,
+            return_count: 0,
             file_name: file_name.to_string()
         }
 
@@ -83,6 +85,82 @@ impl CodeWriter {
         };
     }
 
+
+    fn translate_call(&mut self, command: &Command) {
+        // call <function_name> nArgs
+
+        // 1. push return address
+        // <vm_file>.ret<ret_count
+        let ret_addr = &format!("{}.ret{}",
+                                self.file_name,
+                                self.return_count.to_string());
+        
+        self.write_strings(&[ &format!("@{}", ret_addr), "D=A" ]);
+
+        // 2. Save the frame of the caller
+        //      -> push LCL, ARG, THIS, THAT
+        self.write_strings(&[ "@LCL", "D=M"]);
+        self.push_reg("D");
+
+        self.write_strings(&[ "@ARG", "D=M"]);
+        self.push_reg("D");
+
+        self.write_strings(&[ "@THIS", "D=M"]);
+        self.push_reg("D");
+
+        self.write_strings(&[ "@THAT", "D=M"]);
+        self.push_reg("D");
+
+        // 3. Reposition ARG for the callee
+        //      -> ARG = SP-5-nArgs 
+        let nArg_str = if let Some(nArg) = command.get_arg2() {
+            nArg
+        } else {
+            translation_error("Invalid call command. Usage 'call <function_name> <nArgs>'.");
+        };
+
+        self.write_strings(&[
+            "@5",
+            "D=A",
+            &format!("@{}", nArg_str),
+            "D=D-A",     // D = 5 - nArgs     
+            "@SP",
+            "D=M-D",    // D = SP - (5-nArgs)
+            "@ARG",
+            "M=D"
+        ]);
+
+        // 4. Set LCL = SP ready for the function to initialise its local variables
+        self.write_strings(&[
+            "@SP",
+            "D=M",
+            "@LCL",
+            "M=D"
+        ]);
+
+        // 5. goto <function_name>
+        self.write_strings(&[
+            &format!("@{}", command.get_arg1()),    // @<function_name>
+            "0;JMP" 
+        ]);
+
+        // 6. Make the return address label, this is where the callee can return to... !?
+        //      -> (<ret_addr>)
+        self.write_string(&format!("({})", ret_addr));
+
+    }
+
+
+    fn push_reg(&mut self, reg: &str) {
+        self.write_strings(&[
+            "@SP",
+            "A=M",
+            &format!("M={}", reg)
+        ]);
+        self.modify_SP(true);
+    }
+
+
     fn translate_function(&mut self, command: &Command) {
 
     }
@@ -103,12 +181,6 @@ impl CodeWriter {
     fn translate_if(&mut self, command: &Command) {
         
     }
-
-
-    fn translate_call(&mut self, command: &Command) {
-
-    }
-
 
 
     fn translate_push(&mut self, command: &Command) {
@@ -160,7 +232,7 @@ impl CodeWriter {
          *  Handles gt, lt and eq. 
          *  We have an IF statement (if x == y store TRUE, else FALSE),
          *  Therefore we need a label and a jump... 
-         *  We can use comp_count to write out different labels
+         *  We can use store_true_count to write out different labels
          *  this is not the most efficient way...
          *  EXAMPLE (eq)
          *      @SP
@@ -170,23 +242,23 @@ impl CodeWriter {
          *      @SP
          *      A=M-1
          *      D=D-M      
-         *      @true_<comp_count>
+         *      @true_<store_true_count>
          *      D;JEQ   // JEQ will change depending on jmp_type
          *      @SP     
          *      A=M-1
          *      M=0     // Store false
-         *      @comp_end_<comp_count>
+         *      @comp_end_<store_true_count>
          *      ;JMP
-         *  (true_<comp_count>)
+         *  (true_<store_true_count>)
          *      @SP
          *      A=M-1
          *      M=-1
-         *  (comp_end_<comp_count>)
+         *  (comp_end_<store_true_count>)
          * 
          */
 
-        let true_label     = format!("true_{}", self.comp_count);
-        let comp_end_label = format!("comp_end_{}", self.comp_count);
+        let true_label     = format!("true_{}", self.store_true_count);
+        let comp_end_label = format!("comp_end_{}", self.store_true_count);
 
         self.write_strings(&["@SP", "A=M-1", "D=M"]);
         self.modify_SP(false);
@@ -204,7 +276,7 @@ impl CodeWriter {
         self.write_strings(&["@SP", "A=M-1", "M=-1"]);
 
         self.write_string(&format!("({})", comp_end_label));
-        self.comp_count += 1;
+        self.store_true_count += 1;
     }
 
 
