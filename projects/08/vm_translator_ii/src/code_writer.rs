@@ -147,7 +147,6 @@ impl CodeWriter {
         // 6. Make the return address label, this is where the callee can return to... !?
         //      -> (<ret_addr>)
         self.write_string(&format!("({})", ret_addr));
-
     }
 
 
@@ -162,6 +161,15 @@ impl CodeWriter {
 
 
     fn translate_function(&mut self, command: &Command) {
+        // function <function_name> nVars
+
+        // 1. Make the function label
+        //      -> (<function_name>)
+        self.write_string(&format!("({})", command.get_arg1()));
+
+        // 2. Initialise the local vars to zero
+        //      -> for nVars: push 0
+        
 
     }
 
