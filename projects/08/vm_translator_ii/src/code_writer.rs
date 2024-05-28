@@ -20,6 +20,7 @@ pub struct CodeWriter {
     writer: BufWriter<File>,
     store_true_count: u32,       // No. of store true labels.
     return_count: u32,           // No. of return address labels.
+    func_count: u32,             // No. of function init loop labels.
     file_name: String            // Name of the file without the extension
 }
 
@@ -37,6 +38,7 @@ impl CodeWriter {
             writer: BufWriter::new(file),
             store_true_count: 0,
             return_count: 0,
+            func_count: 0,
             file_name: file_name.to_string()
         }
 
@@ -90,7 +92,7 @@ impl CodeWriter {
         // call <function_name> nArgs
 
         // 1. push return address
-        // <vm_file>.ret<ret_count
+        // <vm_file>.ret<ret_count>
         let ret_addr = &format!("{}.ret{}",
                                 self.file_name,
                                 self.return_count.to_string());
@@ -147,6 +149,7 @@ impl CodeWriter {
         // 6. Make the return address label, this is where the callee can return to... !?
         //      -> (<ret_addr>)
         self.write_string(&format!("({})", ret_addr));
+        self.return_count += 1;
     }
 
 
@@ -167,10 +170,49 @@ impl CodeWriter {
         //      -> (<function_name>)
         self.write_string(&format!("({})", command.get_arg1()));
 
+
         // 2. Initialise the local vars to zero
         //      -> for nVars: push 0
-        
 
+        let loop_start_label = format!("func_init.loop_start.{}", self.func_count);
+        let loop_end_label   = format!("func_init.loop_end.{}", self.func_count);
+
+        let nVars = if let Some(s) = command.get_arg2() {
+            s
+        } else {
+            translation_error("Invalid function command. Usage: function <function_name> <nVars>")
+        };
+
+        self.write_strings(&[
+            &format!("@{}", nVars), // Init nVars variable and the iterator i
+            "D=A",
+            "@nVars",
+            "M=D",
+            "@i",
+            "M=0",
+
+            &format!("({})", loop_start_label),
+            "@nVars",
+            "D=M",
+            "@i",
+            "D=D-M",    // D = nVars - i
+            &format!("@{}", loop_end_label),
+            "D;JEQ",    // If nVars - i == 0 finish loop
+
+            "@SP",      // else push 0
+            "A=M",
+            "M=0",      
+            "@SP",
+            "M=M+1",
+
+            "@i",
+            "M=M+1",    // i++
+
+            &format!("@{}", loop_start_label),
+            "0;JMP"
+        ]);
+
+        self.func_count += 1;
     }
 
     fn translate_return(&mut self, command: &Command) {
