@@ -92,12 +92,15 @@ impl CodeWriter {
         // call <function_name> nArgs
 
         // 1. push return address
+
         // <vm_file>.ret<ret_count>
-        let ret_addr = &format!("{}.ret{}",
-                                self.file_name,
-                                self.return_count.to_string());
+        let ret_addr = format!("{}.ret{}", self.file_name, self.return_count.to_string());
         
-        self.write_strings(&[ &format!("@{}", ret_addr), "D=A" ]);
+        self.write_strings(&[
+            &format!("@{}", ret_addr),
+            "D=A"
+        ]);
+        self.push_reg("D");
 
         // 2. Save the frame of the caller
         //      -> push LCL, ARG, THIS, THAT
@@ -215,8 +218,32 @@ impl CodeWriter {
         self.func_count += 1;
     }
 
+    
     fn translate_return(&mut self, command: &Command) {
+        // We assume that the return value is at the top of the stack
 
+        self.write_strings(&[
+            // 1. Set temp variable FRAME = LCL
+            "@LCL",
+            "D=M",
+            "@FRAME",
+            "M=D",
+
+            // 2. Put the return address in a local var
+            //      -> RET = *(FRAME-5)
+            "@FRAME",
+            "D=M",
+            "@5",
+            "D=D-A",    // D=FRAME-5
+            
+            "A=D",      // M=RAM[FRAME-5]
+            "D=M",      // D=RAM[FRAME-5]
+            "@RET",     
+            "M=D"       // RET=D
+
+            // 3. Reposition the return value for the caller. Put the return value where ARG is.
+            //      -> *ARG = pop()
+        ]);
     }
 
 
