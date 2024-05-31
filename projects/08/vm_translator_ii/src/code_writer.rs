@@ -1,9 +1,5 @@
 /* ==================================================
  * Generates assembly code from the parsed VM command.
- * 
- * One optimisation could be to have a command buffer
- * which stores all commands as an array in memory 
- * instead of constantly writing to the output file?
  * ================================================== */
 
 #![allow(non_snake_case)]
@@ -23,6 +19,7 @@ pub struct CodeWriter {
     func_count: u32,             // No. of function init loop labels.
     file_name: String            // Name of the file without the extension
 }
+
 
 impl CodeWriter {
     pub fn new(output_file: &String) -> CodeWriter {
