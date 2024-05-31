@@ -239,10 +239,60 @@ impl CodeWriter {
             "A=D",      // M=RAM[FRAME-5]
             "D=M",      // D=RAM[FRAME-5]
             "@RET",     
-            "M=D"       // RET=D
+            "M=D",      // RET=D
 
             // 3. Reposition the return value for the caller. Put the return value where ARG is.
             //      -> *ARG = pop()
+            "@SP",
+            "A=M",
+            "D=M",      // D = pop()
+            "@SP",
+            "M=M-1",
+
+            "@ARG",
+            "A=M",      // M=RAM[ARG]
+            "M=D",
+
+            // 4. Restore SP of the caller
+            //      -> SP = ARG + 1
+            "@ARG",
+            "D=M+1",    // D=ARG+1
+            "@SP",
+            "M=D",
+
+            // 5. Restore THAT, THIS, ARG and LCL of the caller
+            // THAT = *(FRAME-1)
+            "@FRAME",
+            "M=M-1",        // FRAME -= 1
+            "A=M",
+            "D=M",
+            "@THAT",
+            "M=D",
+
+            "@FRAME",
+            "M=M-1",        // FRAME =- 1
+            "A=M",
+            "D=M",
+            "@THIS",
+            "M=D",
+
+            "@FRAME",
+            "M=M-1",        // FRAME =- 1
+            "A=M",
+            "D=M",
+            "@ARG",
+            "M=D",
+            
+            "@FRAME",
+            "M=M-1",        // FRAME =- 1
+            "A=M",
+            "D=M",
+            "@LCL",
+            "M=D",      // LCL = *(FRAME)
+
+            // 6. goto RET
+            "@RET",
+            "0;JMP"
         ]);
     }
 
