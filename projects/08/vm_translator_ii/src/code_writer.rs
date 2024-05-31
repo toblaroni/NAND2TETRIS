@@ -66,7 +66,7 @@ impl CodeWriter {
             CommandType::Goto       => self.translate_goto(command),
             CommandType::If         => self.translate_if(command),
             CommandType::Label      => self.translate_label(command),
-            CommandType::Return     => self.translate_return(command)
+            CommandType::Return     => self.translate_return()
         }
     
     }
@@ -212,14 +212,16 @@ impl CodeWriter {
             "M=M+1",    // i++
 
             &format!("@{}", loop_start_label),
-            "0;JMP"
+            "0;JMP",
+
+            &format!("({})", loop_end_label)
         ]);
 
         self.func_count += 1;
     }
 
     
-    fn translate_return(&mut self, command: &Command) {
+    fn translate_return(&mut self) {
         // We assume that the return value is at the top of the stack
 
         self.write_strings(&[
@@ -244,7 +246,7 @@ impl CodeWriter {
             // 3. Reposition the return value for the caller. Put the return value where ARG is.
             //      -> *ARG = pop()
             "@SP",
-            "A=M",
+            "A=M-1",
             "D=M",      // D = pop()
             "@SP",
             "M=M-1",
@@ -292,6 +294,7 @@ impl CodeWriter {
 
             // 6. goto RET
             "@RET",
+            "A=M",
             "0;JMP"
         ]);
     }
