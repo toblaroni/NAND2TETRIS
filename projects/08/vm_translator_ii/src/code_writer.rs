@@ -298,15 +298,34 @@ impl CodeWriter {
 
 
     fn translate_label(&mut self, command: &Command) {
+        // label <label_name>
+        self.write_string(
+            &format!("({})", command.get_arg1())
+        );
     }
 
 
     fn translate_goto(&mut self, command: &Command) {
+        // goto <label_name>
+        self.write_strings(&[
+            &format!("@{}", command.get_arg1()),
+            "0;JMP"
+        ]);
     }
 
 
     fn translate_if(&mut self, command: &Command) {
-        
+        // if-goto <label_name>
+        self.write_strings(&[
+            "@SP",
+            "A=M-1",
+            "D=M",
+            "@SP",
+            "M=M-1",
+            &format!("@{}", command.get_arg1()),
+            "D;JEQ"
+        ])
+
     }
 
 
