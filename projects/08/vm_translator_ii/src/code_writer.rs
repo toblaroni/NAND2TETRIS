@@ -44,6 +44,8 @@ impl CodeWriter {
 
     pub fn init(&mut self) {
         // Do I need to initialise ARG, LCL, THIS THAT?
+        // Maybe not necessary since each function changes the pointers to different places on the stack?
+        // So maybe just SP is needed?
         self.write_strings(&[
             "@SP",
             "M=256" // SP = 256
@@ -323,7 +325,7 @@ impl CodeWriter {
             "@SP",
             "M=M-1",
             &format!("@{}", command.get_arg1()),
-            "D;JEQ"
+            "D;JNE"
         ])
 
     }

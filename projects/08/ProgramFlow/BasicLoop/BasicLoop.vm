@@ -10,7 +10,7 @@
 	push constant 0    
 	pop local 0         // sum = 0
 label LOOP
-	push argument 0     
+	push argument 0     // arg 0 = 3
 	push local 0
 	add
 	pop local 0	        // sum = sum + n
