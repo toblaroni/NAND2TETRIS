@@ -44,14 +44,22 @@ impl CodeWriter {
 
     pub fn init(&mut self) {
         // Do I need to initialise ARG, LCL, THIS THAT?
-        // Maybe not necessary since each function changes the pointers to different places on the stack?
-        // So maybe just SP is needed?
         self.write_strings(&[
             "@SP",
             "M=256" // SP = 256
         ]);
 
         // call Sys.init
+        // 1. push return address
+        //      -> sys.init_return_addr
+        // 2. Save frame of the caller
+        //      ->  LCL, ARG, THIS, THAT
+        // 3. Reposition ARG for the callee
+        //      -> ARG = SP-5-nArgs
+        // 4. Set LCL = SP 
+        // 5. goto Sys.init
+        // 6. Add in the return address label
+        //      -> (sys.init_return_addr)
     }
 
 
