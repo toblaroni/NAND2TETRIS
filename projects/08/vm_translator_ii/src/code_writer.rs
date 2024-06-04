@@ -43,23 +43,59 @@ impl CodeWriter {
 
 
     pub fn init(&mut self) {
-        // Do I need to initialise ARG, LCL, THIS THAT?
+        // 1. Set SP
         self.write_strings(&[
+            "@256",
+            "D=A",
             "@SP",
-            "M=256" // SP = 256
+            "M=D" // SP = 256
         ]);
 
-        // call Sys.init
-        // 1. push return address
-        //      -> sys.init_return_addr
-        // 2. Save frame of the caller
+        // 2. Call Sys.init. Sys.init should always call Sys.main
+        self.write_strings(&[
+            // 1. push return address
+            //      -> sys.init_return_addr
+            "@sys.init_return_addr",
+            "D=A",
+            "@SP",
+            "A=M",
+            "M=D",
+            "@SP",
+            "M=M+1",
+
+        ]);
+        
+        // 2. Save frame of the caller, These will all be zero so just push zero?
         //      ->  LCL, ARG, THIS, THAT
-        // 3. Reposition ARG for the callee
-        //      -> ARG = SP-5-nArgs
-        // 4. Set LCL = SP 
-        // 5. goto Sys.init
-        // 6. Add in the return address label
-        //      -> (sys.init_return_addr)
+        self.write_string("D=0");
+        self.push_reg("D");
+        self.push_reg("D");
+        self.push_reg("D");
+        self.push_reg("D");
+
+        self.write_strings(&[
+            // 3. Reposition ARG for the callee, nArgs = 0
+            //      -> ARG = SP-5
+            "@SP",
+            "D=M",
+            "@5",
+            "D=D-A",    // D = SP-5
+            "@ARG",
+            "M=D",
+
+            // 4. Set LCL = SP 
+            "@SP",
+            "D=M",
+            "@LCL",
+            "M=D",
+
+            // 5. goto Sys.init
+            "@Sys.init",
+            "0;JMP",
+
+            // 6. Add in the return address label
+            "(sys.init_return_addr)"
+        ]);
     }
 
 
