@@ -135,7 +135,6 @@ impl CodeWriter {
         // call <function_name> nArgs
 
         // 1. push return address
-
         // <vm_file>.ret<ret_count>
         let ret_addr = format!("{}.ret{}", self.file_name, self.return_count.to_string());
         
@@ -160,7 +159,7 @@ impl CodeWriter {
         self.push_reg("D");
 
         // 3. Reposition ARG for the callee
-        //      -> ARG = SP-5-nArgs 
+        //      -> ARG = SP - 5 - nArgs 
         let nArg_str = if let Some(nArg) = command.get_arg2() {
             nArg
         } else {
@@ -168,12 +167,12 @@ impl CodeWriter {
         };
 
         self.write_strings(&[
-            "@5",
-            "D=A",
-            &format!("@{}", nArg_str),
-            "D=D-A",     // D = 5 - nArgs     
             "@SP",
-            "D=M-D",    // D = SP - (5-nArgs)
+            "D=M",
+            "@5",
+            "D=D-A",    // D = SP - 5
+            &format!("@{}", nArg_str),
+            "D=D-A",    // D = (SP-5) - nArgs
             "@ARG",
             "M=D"
         ]);
