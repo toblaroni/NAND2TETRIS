@@ -217,6 +217,7 @@ impl CodeWriter {
 
 
         // 2. Initialise the local vars to zero
+        //  (One optimisation would be skip this if nVars == 0)
         //      -> for nVars: push 0
 
         let loop_start_label = format!("func_init.loop_start.{}", self.func_count);
@@ -386,7 +387,7 @@ impl CodeWriter {
             "local"    => self.generic_mem_push("@LCL", index),
             "this"     => self.generic_mem_push("@THIS", index),
             "that"     => self.generic_mem_push("@THAT", index),
-            "static"   => self.push_static(index),
+            "static"   => self.push_static(index, command.get_file_name()),
             "constant" => self.push_constant(command),
             "pointer"  => self.push_base_index(index, "@3"),
             "temp"     => self.push_base_index(index, "@5"),
@@ -409,7 +410,7 @@ impl CodeWriter {
             "local"    => self.generic_mem_pop("@LCL", index),
             "this"     => self.generic_mem_pop("@THIS", index),
             "that"     => self.generic_mem_pop("@THAT", index),
-            "static"   => self.pop_static(index),
+            "static"   => self.pop_static(index, command.get_file_name()),
             "constant" => translation_error("Can't pop to 'constant' memory segment."),
             "pointer"  => self.pop_base_index(index, "@3"),
             "temp"     => self.pop_base_index(index, "@5"),
@@ -516,7 +517,7 @@ impl CodeWriter {
     }
 
 
-    fn push_static(&mut self, index: &str) {
+    fn push_static(&mut self, index: &str, vm_file_name: &str) {
         /*
          *  push static <index>
          *  output:
@@ -525,7 +526,7 @@ impl CodeWriter {
          *      ...Push D to stack...
          *  
          */
-        let var_label = &format!("@{}.{}", self.file_name, index);
+        let var_label = &format!("@{}.{}", vm_file_name, index);
         self.write_strings(&[
             var_label,
             "D=M",
@@ -576,7 +577,7 @@ impl CodeWriter {
     }
 
 
-    fn pop_static(&mut self, index: &str) {
+    fn pop_static(&mut self, index: &str, vm_file_name: &str) {
         /*
          *  pop static index
          *  Output:
@@ -584,7 +585,7 @@ impl CodeWriter {
          *      @<file_name>.<index>
          *      M=D
          */
-        let var_label = &format!("@{}.{}", self.file_name, index);
+        let var_label = &format!("@{}.{}", vm_file_name, index);
 
         self.write_strings(&[
             "@SP",

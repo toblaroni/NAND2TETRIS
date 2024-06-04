@@ -10,6 +10,7 @@
 
 #![allow(dead_code)]
 
+use std::path::Path;
 use std::io::{BufRead, BufReader};
 use std::fs::File;
 use std::u32;
@@ -48,24 +49,39 @@ pub enum CommandType {
 pub struct Command {
    arg1:         String,
    arg2:         Option<String>,
-   command_type: CommandType
+   command_type: CommandType,
+   file_name:    String     // This is needed since static variables need to be xxx.j where xxx is the name of the vm file
 }
 
 pub struct Parser {
    current_command:     Option<Command>,
    reader:              BufReader<File>,
-   has_more_commands:   bool
+   has_more_commands:   bool,
+   file_name:           String
 }
 
 
 impl Parser {
    pub fn new(input_file: String) -> Parser {
-      let file = File::open(input_file).expect("Error opening input file.");
+      let file = File::open(&input_file).expect("Error opening input file.");
+
+      let path = Path::new(&input_file);
+
+      let file_name = if let Some(filename) = path.file_name() {
+         if let Some(filename_str) = filename.to_str() {
+            filename_str
+         } else {
+            translation_error("Couldn't deduce filename from input file.")
+         }
+      } else {
+         translation_error("Couldn't deduce filename from input file.")
+      };
 
       Parser {
          current_command: None,
          reader: BufReader::new(file),
-         has_more_commands: true
+         has_more_commands: true,
+         file_name: file_name.to_string()
       }
    }
 
@@ -132,7 +148,8 @@ impl Parser {
             Command {
                arg1: c.to_string(),
                arg2: None,
-               command_type: CommandType::Arithmetic
+               command_type: CommandType::Arithmetic,
+               file_name: self.file_name.clone()
             }
          );
          return
@@ -156,7 +173,8 @@ impl Parser {
                Command {
                   arg1: label_name,
                   arg2: None,
-                  command_type: CommandType::Label
+                  command_type: CommandType::Label,
+                  file_name: self.file_name.clone()
                }
             )
          },
@@ -167,7 +185,8 @@ impl Parser {
                Command {
                   arg1: label_name,
                   arg2: None,
-                  command_type: CommandType::If
+                  command_type: CommandType::If,
+                  file_name: self.file_name.clone()
                }
             )
          },
@@ -178,7 +197,8 @@ impl Parser {
                Command {
                   arg1: label_name,
                   arg2: None,
-                  command_type: CommandType::Goto
+                  command_type: CommandType::Goto,
+                  file_name: self.file_name.clone()
                }
             )
          },
@@ -190,7 +210,8 @@ impl Parser {
                Command {
                   arg1: function_name,
                   arg2: Some(local_vars),
-                  command_type: CommandType::Function
+                  command_type: CommandType::Function,
+                  file_name: self.file_name.clone()
                }
             )
          },
@@ -202,7 +223,8 @@ impl Parser {
                Command {
                   arg1: function_name,
                   arg2: Some(arg_count),
-                  command_type: CommandType::Call
+                  command_type: CommandType::Call,
+                  file_name: self.file_name.clone()
                }
             )
          },
@@ -211,7 +233,8 @@ impl Parser {
                Command {
                   arg1: c.to_string(),  // This should really be None but then that messes errthing up :/
                   arg2: None,
-                  command_type: CommandType::Return
+                  command_type: CommandType::Return,
+                  file_name: self.file_name.clone()
                }
             )
          },
@@ -241,7 +264,8 @@ impl Parser {
             self.current_command = Some(Command {
                arg1: segment,
                arg2: Some(index),
-               command_type: push_pop
+               command_type: push_pop,
+               file_name: self.file_name.clone()
             })
          },
          Err(_) => translation_error(&format!("Invalid index for push/pop command: {}", index))
@@ -284,6 +308,10 @@ impl Command {
 
    pub fn get_command_type(&self) -> &CommandType {
       &self.command_type
+   }
+
+   pub fn get_file_name(&self) -> &String {
+      &self.file_name
    }
 }
 
