@@ -1,0 +1,13 @@
+class Main {
+    function void main() {
+        var GameOfLife gol; 
+        // var Cell cell;
+
+        // let cell = Cell.new(20, 10, 10, true);
+        let gol = GameOfLife.new(6);
+
+        // do cell.draw();
+
+        return;
+    }
+}
