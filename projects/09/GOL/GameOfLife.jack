@@ -64,6 +64,8 @@ class GameOfLife {
 
 
     method void draw_board() {
+        do Screen.clearScreen();
+
         // Loop through current board and draw each cell
         var Array cur_board, row;
         var int i, j;
@@ -92,7 +94,7 @@ class GameOfLife {
         return;
     }
 
-    method void update_board() {
+    method void update() {
 
         return;
     }

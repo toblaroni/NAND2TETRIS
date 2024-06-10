@@ -5,6 +5,12 @@ class Main {
         let gol = GameOfLife.new(4);        // Resoulution of 6
         do gol.draw_board();
 
+        while (true) {
+            do gol.update();
+            do gol.draw_board();
+            do Sys.wait(1000);
+        }
+
         return;
     }
 }
