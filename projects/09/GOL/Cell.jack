@@ -28,4 +28,14 @@ class Cell {
     method boolean is_alive() {
         return alive;
     }
+
+    method void kill() {
+        let alive = false;
+        return;
+    }
+
+    method void bring_alive() {
+        let alive = true;
+        return;
+    }
 }

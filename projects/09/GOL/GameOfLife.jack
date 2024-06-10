@@ -64,8 +64,6 @@ class GameOfLife {
 
 
     method void draw_board() {
-        do Screen.clearScreen();
-
         // Loop through current board and draw each cell
         var Array cur_board, row;
         var int i, j;
@@ -95,10 +93,27 @@ class GameOfLife {
     }
 
     method void update() {
+        var Cell cell;
+        var Array cur_board, row;
+
+        if (draw_board_1) {
+            let cur_board = board_1;
+        } else {
+            let cur_board = board_2;
+        }
+
+        let row = cur_board[0];
+        let cell = row[0];
+        do cell.draw();
+
+        if (cell.is_alive()) {
+            do cell.kill();
+        } else {
+            do cell.bring_alive();
+        }
 
         return;
     }
-
 
     // Shouldn't really be in here
     function int pow(int base, int exponent) {
