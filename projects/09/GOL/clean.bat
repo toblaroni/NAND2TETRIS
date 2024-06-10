@@ -1,0 +1,1 @@
+del Cell.vm Main.vm GameOfLife.vm

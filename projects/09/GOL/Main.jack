@@ -1,0 +1,10 @@
+class Main {
+    function void main() {
+        var GameOfLife gol; 
+
+        let gol = GameOfLife.new(4);        // Resoulution of 6
+        do gol.draw_board();
+
+        return;
+    }
+}
