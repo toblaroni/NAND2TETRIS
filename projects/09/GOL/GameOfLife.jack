@@ -1,10 +1,11 @@
 // Game of Life in Jack
 // The screen is 256 rows of 512 pixels.
 // Board should be its own class... (just want to get this project done and start compiler...)
+// OPTIMISATION -> Use a bitmap to render the cells...
 class GameOfLife {
     field int rows, cols, cell_size;
     field Array board_1, board_2;     // Alternate between displaying one, and then displaying the other
-    field boolean draw_board_1;    // Which board are we currently displaying
+    field boolean draw_board_1;       // Which board are we currently displaying
 
     constructor GameOfLife new(int resolution) {
         var int i, j;
@@ -98,8 +99,10 @@ class GameOfLife {
 
         if (draw_board_1) {
             let cur_board = board_1;
+            // draw_board_1 = false;
         } else {
             let cur_board = board_2;
+            // draw_board_1 = true;
         }
 
         let row = cur_board[0];

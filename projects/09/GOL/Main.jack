@@ -2,13 +2,13 @@ class Main {
     function void main() {
         var GameOfLife gol; 
 
-        let gol = GameOfLife.new(4);        // Resoulution of 6
+        let gol = GameOfLife.new(6);
         do gol.draw_board();
 
         while (true) {
             do gol.update();
             do gol.draw_board();
-            do Sys.wait(1000);
+            do Sys.wait(500);
         }
 
         return;

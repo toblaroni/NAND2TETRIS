@@ -38,4 +38,43 @@ class Cell {
         let alive = true;
         return;
     }
+
+
+
+    function int num_neighbours(Array board) {
+        /*
+            board is the 2D board array
+                +----+-----+----+
+                | NW |  N  | NE |
+                +----+-----+----+
+                | W  |  C  | E  |       # C is the cell at (x, y)
+                +----+-----+----+
+                | SW |  S  | SE |
+                +----+-----+----+
+        */
+
+        return NW(board) + N(board) +
+               NE(board) + E(board) + 
+               SE(board) + S(board) + 
+               SW(board) + W(board);
+    }
+
+    function int NW(Array board) {
+        var Array row;
+        var Cell cell;
+
+        if (x == 0 || y == 0) {
+            return 0;
+        } 
+
+    }
+
+    function int is_alive_int(int x, int y, Array board) {
+        var Array row;
+        var Cell cell;
+
+        let row = board[y];
+        let cell = row[x];
+
+    }
 }
