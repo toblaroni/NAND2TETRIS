@@ -1,6 +1,4 @@
 
-
-
 class Cell {
     field boolean alive;
     field int x, y, size;
@@ -39,15 +37,13 @@ class Cell {
         return;
     }
 
-
-
-    function int num_neighbours(Array board) {
+    method int num_neighbours(Array board) {
         /*
             board is the 2D board array
                 +----+-----+----+
                 | NW |  N  | NE |
                 +----+-----+----+
-                | W  |  C  | E  |       # C is the cell at (x, y)
+                | W  |  C  | E  |       # C is current 'this'
                 +----+-----+----+
                 | SW |  S  | SE |
                 +----+-----+----+
@@ -59,22 +55,61 @@ class Cell {
                SW(board) + W(board);
     }
 
-    function int NW(Array board) {
-        var Array row;
+    method int NW(Array board) {
         var Cell cell;
 
-        if (x == 0 || y == 0) {
+        if (x = 0 | y = 0) {        // What kind of stupid logical comparison operator is that
             return 0;
         } 
 
+        let cell = GameOfLife.get_cell(x-1, y-1, board);
+        return cell.is_alive_int();
+        
     }
 
-    function int is_alive_int(int x, int y, Array board) {
-        var Array row;
+    method int N(Array board) {
         var Cell cell;
 
-        let row = board[y];
-        let cell = row[x];
+        if (y = 0) {
+            return 0;
+        } 
 
+        let cell = GameOfLife.get_cell(x, y-1, board);
+        return cell.is_alive_int();
+    }
+
+    method int NE(Array board) {
+        var Cell cell;
+
+        if (y = 0) {
+            return 0;
+        } 
+
+        let cell = GameOfLife.get_cell(x+1, y-1, board);
+        return cell.is_alive_int();
+    }
+
+    method int E(Array board) {
+        return 0;
+    }
+    method int SE(Array board) {
+        return 0;
+    }
+    method int S(Array board) {
+        return 0;
+    }
+    method int SW(Array board) {
+        return 0;
+    }
+    method int W(Array board) {
+        return 0;
+    }
+
+    method int is_alive_int() {
+        if (is_alive()) {
+            return 1;
+        } else {
+            return 0;
+        }
     }
 }

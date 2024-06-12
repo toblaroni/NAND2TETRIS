@@ -129,7 +129,15 @@ class GameOfLife {
         return res;
     }
 
+    function Cell get_cell(int x, int y, Array board) {
+        var Array row;
+
+        let row = board[y];
+        return row[x];
+    }
+
     method void dispose() {
         return;
     }
+
 }
