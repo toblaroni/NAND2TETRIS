@@ -58,21 +58,16 @@ class Cell {
     method int NW(Array board) {
         var Cell cell;
 
-        if (x = 0 | y = 0) {        // What kind of stupid logical comparison operator is that
-            return 0;
-        } 
+        if (x = 0 | y = 0) {  return 0; } 
 
         let cell = GameOfLife.get_cell(x-1, y-1, board);
         return cell.is_alive_int();
-        
     }
 
     method int N(Array board) {
         var Cell cell;
 
-        if (y = 0) {
-            return 0;
-        } 
+        if (y = 0) { return 0; } 
 
         let cell = GameOfLife.get_cell(x, y-1, board);
         return cell.is_alive_int();
@@ -81,28 +76,54 @@ class Cell {
     method int NE(Array board) {
         var Cell cell;
 
-        if (y = 0) {
-            return 0;
-        } 
+        if (y = 0 | x = 511) { return 0; } 
 
         let cell = GameOfLife.get_cell(x+1, y-1, board);
         return cell.is_alive_int();
     }
 
     method int E(Array board) {
-        return 0;
+        var Cell cell;
+
+        if (x = 511) { return 0; } 
+
+        let cell = GameOfLife.get_cell(x+1, y, board);
+        return cell.is_alive_int();
     }
     method int SE(Array board) {
-        return 0;
+        var Cell cell;
+
+        if (y = 255 | x = 511) { return 0; } 
+
+        let cell = GameOfLife.get_cell(x+1, y+1, board);
+        return cell.is_alive_int();
     }
+    
     method int S(Array board) {
-        return 0;
+        var Cell cell;
+
+        if (y = 255) { return 0; } 
+
+        let cell = GameOfLife.get_cell(x, y+1, board);
+        return cell.is_alive_int();
     }
+    
     method int SW(Array board) {
-        return 0;
+        var Cell cell;
+
+        if (y = 255 | x = 0) { return 0; } 
+
+        let cell = GameOfLife.get_cell(x-1, y+1, board);
+        return cell.is_alive_int();
     }
+    
     method int W(Array board) {
-        return 0;
+        var Cell cell;
+
+        if (x = 0) { return 0; } 
+
+        let cell = GameOfLife.get_cell(x-1, y, board);
+        return cell.is_alive_int();
     }
 
     method int is_alive_int() {

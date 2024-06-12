@@ -95,14 +95,17 @@ class GameOfLife {
 
     method void update() {
         var Cell cell;
-        var Array cur_board, row;
+        var Array currrent_board, new_board;
 
+        // Do this to avoid a big if else statement. Just reads nicer i think
         if (draw_board_1) {
-            let cur_board = board_1;
-            // draw_board_1 = false;
+            let current = board_1;
+            let new_board = board_2;
+            draw_board_1 = false;
         } else {
             let cur_board = board_2;
-            // draw_board_1 = true;
+            let new_board = board_12;
+            draw_board_1 = true;
         }
 
         let row = cur_board[0];
