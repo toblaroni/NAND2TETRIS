@@ -1,6 +1,7 @@
 class Main {
     function void main() {
         var GameOfLife gol; 
+        var int iterations, i;
 
         let gol = GameOfLife.new(8);
         do gol.draw_board();
@@ -9,6 +10,8 @@ class Main {
             do gol.update();
             do gol.draw_board();
             do Sys.wait(500);
+
+            let i = i + 1;
         }
 
         return;

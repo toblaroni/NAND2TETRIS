@@ -1,23 +1,13 @@
 // Game of Life in Jack
 // The screen is 256 rows of 512 pixels.
-// Board should be its own class... (just want to get this project done and start compiler...)
 // OPTIMISATION -> Use a bitmap to render the cells...
 class GameOfLife {
     field int rows, cols, cell_size;
-    field Array board_1, board_2;     // Alternate between displaying one, and then displaying the other
+    field Board board_1, board_2;     // Alternate between displaying one, and then displaying the other
     field boolean draw_board_1;       // Which board are we currently displaying
 
     constructor GameOfLife new(int resolution) {
-        var int i, j;
-        var int x, y;
-
-        var Array row_1;
-        var Array row_2;
-
-        var Cell cell_1;
-        var Cell cell_2;
-
-        let draw_board_1 = true;   // Display board_1
+        let draw_board_1 = false;   // Display board_1
 
         if (resolution > 8) {
             let resolution = 8;
@@ -26,77 +16,23 @@ class GameOfLife {
         if (resolution < 0) {
             let resolution = 2;
         }
-
-        let cell_size = GameOfLife.pow(2, resolution) - 1;
-
-        let rows = 256 / cell_size;
-        let cols = 512 / cell_size;
-
-        let board_1 = Array.new(rows);
-        let board_2 = Array.new(rows);
-
-        // Fill the board
-        let i = 0;
-        while (i < rows) {
-            let y = i * cell_size;
-            
-            // Init each row
-            let board_1[i] = Array.new(cols);
-            let board_2[i] = Array.new(cols);
-
-            let row_1 = board_1[i];
-            let row_2 = board_2[i];
-
-            let j = 0;
-            while (j < cols) {
-                let x = j * cell_size;
-
-                // Create a cell in each column
-                let row_1[j] = Cell.new(x, y, cell_size, true);
-                let row_2[j] = Cell.new(x, y, cell_size, true);
-
-                let j = j + 1;
-            }
-            let i = i + 1;
-        }
-
-        return this;
     }
 
 
-    method void draw_board() {
-        // Loop through current board and draw each cell
-        var Array cur_board, row;
-        var int i, j;
-        var Cell cell;
-
+    method void draw() {
         if (draw_board_1) {
             let cur_board = board_1;
         } else {
             let cur_board = board_2;
         }
 
-        let i = 0;
-        while (i < rows) {
-            let j = 0;
-
-            let row = cur_board[i];
-
-            while (j < cols) {
-                let cell = row[j];
-            
-                do cell.draw();
-                let j = j + 1;
-            }
-            let i = i + 1;
-        }
-        return;
     }
 
     method void update() {
         var Cell current_cell, new_cell;
-        var Array cur_board, new_board;
-        var int i, j, neighbor_count;
+        var Array new_board, cur_board;
+        var int neighbor_count;
+        var int i, j;
 
         // Do this to avoid a big if else statement. Just reads nicer i think
         if (draw_board_1) {
@@ -133,33 +69,4 @@ class GameOfLife {
         return;
     }
 
-    // Shouldn't really be in here
-    function int pow(int base, int exponent) {
-        var int res;
-        let res = 1;
-        while (exponent > 0) {
-            let res = res * base;
-            let exponent = exponent - 1;
-        }
-        return res;
-    }
-
-    function Cell get_cell(int x, int y, Array board) {
-        var Array row;
-
-        let row = board[y];
-        return row[x];
-    }
-
-    method void dispose() {
-        return;
-    }
-
-    method int get_width() {
-        return cols;
-    }
-
-    method int get_height() {
-        return rows;
-    }
 }

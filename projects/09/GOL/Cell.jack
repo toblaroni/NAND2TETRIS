@@ -3,6 +3,8 @@ class Cell {
     field boolean alive;
     field int x, y, size;
 
+    static Cell cell;
+
     constructor Cell new(int x_, int y_, int size_, boolean alive_) {
         let x = x_;
         let y = y_;
@@ -49,6 +51,10 @@ class Cell {
                 +----+-----+----+
         */
 
+        do Output.printInt(board.get_height());
+        do Output.println();
+        do Output.printInt(board.get_width());
+
         return NW(board) + N(board) +
                NE(board) + E(board) + 
                SE(board) + S(board) + 
@@ -56,8 +62,6 @@ class Cell {
     }
 
     method int NW(GameOfLife board) {
-        var Cell cell;
-
         if (x = 0 | y = 0) {  return 0; } 
 
         let cell = GameOfLife.get_cell(x-1, y-1, board);
@@ -65,8 +69,6 @@ class Cell {
     }
 
     method int N(GameOfLife board) {
-        var Cell cell;
-
         if (y = 0) { return 0; } 
 
         let cell = GameOfLife.get_cell(x, y-1, board);
@@ -74,52 +76,41 @@ class Cell {
     }
 
     method int NE(GameOfLife board) {
-        var Cell cell;
-
-        if (y = 0 | x = board.get_width()) { return 0; } 
+        if (y = 0 | x = board.get_width()-1) { return 0; } 
 
         let cell = GameOfLife.get_cell(x+1, y-1, board);
         return cell.is_alive_int();
     }
 
     method int E(GameOfLife board) {
-        var Cell cell;
-
-        if (x = board.get_width()) { return 0; } 
+        if (x = board.get_width()-1) { return 0; } 
 
         let cell = GameOfLife.get_cell(x+1, y, board);
         return cell.is_alive_int();
     }
-    method int SE(GameOfLife board) {
-        var Cell cell;
 
-        if (y = board.get_height() | x = board.get_width()) { return 0; } 
+    method int SE(GameOfLife board) {
+        if (y = board.get_height()-1 | x = board.get_width()-1) { return 0; } 
 
         let cell = GameOfLife.get_cell(x+1, y+1, board);
         return cell.is_alive_int();
     }
     
     method int S(GameOfLife board) {
-        var Cell cell;
-
-        if (y = board.get_height()) { return 0; } 
+        if (y = board.get_height()-1) { return 0; } 
 
         let cell = GameOfLife.get_cell(x, y+1, board);
         return cell.is_alive_int();
     }
     
     method int SW(GameOfLife board) {
-        var Cell cell;
-
-        if (y = board.get_height() | x = 0) { return 0; } 
+        if (y = board.get_height()-1 | x = 0) { return 0; } 
 
         let cell = GameOfLife.get_cell(x-1, y+1, board);
         return cell.is_alive_int();
     }
     
     method int W(GameOfLife board) {
-        var Cell cell;
-
         if (x = 0) { return 0; } 
 
         let cell = GameOfLife.get_cell(x-1, y, board);
@@ -127,10 +118,15 @@ class Cell {
     }
 
     method int is_alive_int() {
-        if (is_alive()) {
+        if (alive) {
             return 1;
         } else {
             return 0;
         }
+    }
+
+    method void dispose() {
+        do Memory.deAlloc(this);
+        return;
     }
 }

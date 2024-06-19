@@ -1,0 +1,83 @@
+
+
+class Board {
+    field int cols, rows;
+    field Array row, col;
+
+    constructor Board new(int resolution) {
+        var int i, j, x, y;
+
+        let cell_size = GameOfLife.pow(2, resolution) - 1;
+
+        let rows = 256 / cell_size;
+        let cols = 512 / cell_size;
+
+        let board_1 = Array.new(rows);
+        let board_2 = Array.new(rows);
+
+        // Fill the board
+        let i = 0;
+        while (i < rows) {
+            let y = i * cell_size;
+            
+            let j = 0;
+            while (j < cols) {
+                let x = j * cell_size;
+
+                let j = j + 1;
+            }
+            let i = i + 1;
+        }
+
+        return this;
+
+    }
+
+    method int get_width() {
+        return cols;
+    }
+
+    method int get_height() {
+        return rows;
+    }
+
+    method Cell get_cell(int x, int y) {
+        var Array row;
+
+        let row = board[y];
+        return row[x];
+    }
+
+    method void draw_board() {
+        // Loop through current board and draw each cell
+        var Cell cell;
+        var int i, j;
+
+
+        let i = 0;
+        while (i < rows) {
+            let j = 0;
+
+            while (j < cols) {
+                let cell = GameOfLife.get_cell(j, i, cur_board);
+            
+                do cell.draw();
+                let j = j + 1;
+            }
+            let i = i + 1;
+        }
+        return;
+    }
+
+
+    // Shouldn't really be in here
+    function int pow(int base, int exponent) {
+        var int res;
+        let res = 1;
+        while (exponent > 0) {
+            let res = res * base;
+            let exponent = exponent - 1;
+        }
+        return res;
+    }
+}
