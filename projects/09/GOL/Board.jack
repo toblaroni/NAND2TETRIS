@@ -1,28 +1,33 @@
 
 
 class Board {
-    field int cols, rows;
-    field Array row, col;
+    field int num_cols, num_rows, cell_size;
+    field Array rows;
 
     constructor Board new(int resolution) {
         var int i, j, x, y;
+        var Array row;
 
-        let cell_size = GameOfLife.pow(2, resolution) - 1;
+        let cell_size = Board.pow(2, resolution) - 1;
 
-        let rows = 256 / cell_size;
-        let cols = 512 / cell_size;
+        let num_rows = 256 / cell_size;
+        let num_cols = 512 / cell_size;
 
-        let board_1 = Array.new(rows);
-        let board_2 = Array.new(rows);
+        let rows = Array.new(num_rows);
 
         // Fill the board
         let i = 0;
-        while (i < rows) {
+        while (i < num_rows) {
             let y = i * cell_size;
+
+            let rows[i] = Array.new(num_cols);
+            let row = rows[i];
             
             let j = 0;
-            while (j < cols) {
+            while (j < num_cols) {
                 let x = j * cell_size;
+
+                let row[j] = Cell.new(x, y, cell_size, true, this);
 
                 let j = j + 1;
             }
@@ -34,17 +39,17 @@ class Board {
     }
 
     method int get_width() {
-        return cols;
+        return num_cols;
     }
 
     method int get_height() {
-        return rows;
+        return num_rows;
     }
 
     method Cell get_cell(int x, int y) {
         var Array row;
 
-        let row = board[y];
+        let row = rows[y];
         return row[x];
     }
 
@@ -53,13 +58,12 @@ class Board {
         var Cell cell;
         var int i, j;
 
-
         let i = 0;
-        while (i < rows) {
+        while (i < num_rows) {
             let j = 0;
 
-            while (j < cols) {
-                let cell = GameOfLife.get_cell(j, i, cur_board);
+            while (j < num_cols) {
+                let cell = get_cell(j, i);
             
                 do cell.draw();
                 let j = j + 1;

@@ -2,14 +2,16 @@
 class Cell {
     field boolean alive;
     field int x, y, size;
+    field Board board;  // The board this cell belongs to
 
     static Cell cell;
 
-    constructor Cell new(int x_, int y_, int size_, boolean alive_) {
+    constructor Cell new(int x_, int y_, int size_, boolean alive_, Board board_) {
         let x = x_;
         let y = y_;
         let size = size_;
         let alive = alive_;
+        let board = board_;
 
         return this;
     }
@@ -39,7 +41,7 @@ class Cell {
         return;
     }
 
-    method int num_neighbours(GameOfLife board) {
+    method int num_neighbours() {
         /*
             board is the 2D board array
                 +----+-----+----+
@@ -55,65 +57,62 @@ class Cell {
         do Output.println();
         do Output.printInt(board.get_width());
 
-        return NW(board) + N(board) +
-               NE(board) + E(board) + 
-               SE(board) + S(board) + 
-               SW(board) + W(board);
+        return NW() + N() + NE() + E() + SE() + S() + SW() + W();
     }
 
-    method int NW(GameOfLife board) {
+    method int NW() {
         if (x = 0 | y = 0) {  return 0; } 
 
-        let cell = GameOfLife.get_cell(x-1, y-1, board);
+        let cell = board.get_cell(x-1, y-1);
         return cell.is_alive_int();
     }
 
-    method int N(GameOfLife board) {
+    method int N() {
         if (y = 0) { return 0; } 
 
-        let cell = GameOfLife.get_cell(x, y-1, board);
+        let cell = board.get_cell(x, y-1);
         return cell.is_alive_int();
     }
 
-    method int NE(GameOfLife board) {
+    method int NE() {
         if (y = 0 | x = board.get_width()-1) { return 0; } 
 
-        let cell = GameOfLife.get_cell(x+1, y-1, board);
+        let cell = board.get_cell(x+1, y-1);
         return cell.is_alive_int();
     }
 
-    method int E(GameOfLife board) {
+    method int E() {
         if (x = board.get_width()-1) { return 0; } 
 
-        let cell = GameOfLife.get_cell(x+1, y, board);
+        let cell = board.get_cell(x+1, y);
         return cell.is_alive_int();
     }
 
-    method int SE(GameOfLife board) {
+    method int SE() {
         if (y = board.get_height()-1 | x = board.get_width()-1) { return 0; } 
 
-        let cell = GameOfLife.get_cell(x+1, y+1, board);
+        let cell = board.get_cell(x+1, y+1);
         return cell.is_alive_int();
     }
     
-    method int S(GameOfLife board) {
+    method int S() {
         if (y = board.get_height()-1) { return 0; } 
 
-        let cell = GameOfLife.get_cell(x, y+1, board);
+        let cell = board.get_cell(x, y+1);
         return cell.is_alive_int();
     }
     
-    method int SW(GameOfLife board) {
+    method int SW() {
         if (y = board.get_height()-1 | x = 0) { return 0; } 
 
-        let cell = GameOfLife.get_cell(x-1, y+1, board);
+        let cell = board.get_cell(x-1, y+1);
         return cell.is_alive_int();
     }
     
-    method int W(GameOfLife board) {
+    method int W() {
         if (x = 0) { return 0; } 
 
-        let cell = GameOfLife.get_cell(x-1, y, board);
+        let cell = board.get_cell(x-1, y);
         return cell.is_alive_int();
     }
 
