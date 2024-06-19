@@ -27,7 +27,7 @@ class Board {
             while (j < num_cols) {
                 let x = j * cell_size;
 
-                let row[j] = Cell.new(x, y, cell_size, true, this);
+                let row[j] = Cell.new(j, i, cell_size, true, this);
 
                 let j = j + 1;
             }
