@@ -14,8 +14,8 @@ class Cell {
         let board = board_;
 
 
-        let y = i * size_;
-        let x = j * size_;
+        let y = j * size_;
+        let x = i * size_;
 
         return this;
     }
@@ -48,6 +48,7 @@ class Cell {
     method int num_neighbours() {
         /*
             board is the 2D board array
+                  x ---------->
                 +----+-----+----+
                 | NW |  N  | NE |
                 +----+-----+----+
@@ -55,65 +56,65 @@ class Cell {
                 +----+-----+----+
                 | SW |  S  | SE |
                 +----+-----+----+
+
         */
 
-        // return NW() + N() + NE() + E() + SE() + S() + SW() + W();
-        return E();
+        return NW() + N() + NE() + E() + SE() + S() + SW() + W();
     }
 
     method int NW() {
         if ((i = 0) | (j = 0)) {  return 0; } 
 
-        let cell = board.get_cell(i-1, j-1);
+        let cell = board.get_cell((i-1), (j-1));
         return cell.is_alive_int();
     }
 
     method int N() {
         if (j = 0) { return 0; } 
 
-        let cell = board.get_cell(i, j-1);
+        let cell = board.get_cell(i, (j-1));
         return cell.is_alive_int();
     }
 
     method int NE() {
-        if ((j = 0) | (i = board.get_width()-1)) { return 0; } 
+        if ((j = 0) | (i = (board.get_width()-1))) { return 0; } 
 
-        let cell = board.get_cell(i+1, j-1);
+        let cell = board.get_cell((i+1), (j-1));
         return cell.is_alive_int();
     }
 
     method int E() {
-        if (i = board.get_width()-1) { return 0; } 
+        if (i = (board.get_width()-1)) { return 0; } 
 
-        let cell = board.get_cell(x+1, y);
+        let cell = board.get_cell((x+1), y);
         return cell.is_alive_int();
     }
 
     method int SE() {
-        if ((j = board.get_height()-1) | (i = board.get_width()-1)) { return 0; } 
+        if ((j = (board.get_height()-1)) | (i = (board.get_width()-1))) { return 0; } 
 
-        let cell = board.get_cell(i+1, j+1);
+        let cell = board.get_cell((i+1), (j+1));
         return cell.is_alive_int();
     }
     
     method int S() {
-        if (j = board.get_height()-1) { return 0; } 
+        if (j = (board.get_height()-1)) { return 0; } 
 
-        let cell = board.get_cell(i, j+1);
+        let cell = board.get_cell(i, (j+1));
         return cell.is_alive_int();
     }
     
     method int SW() {
-        if ((j = board.get_height()-1) | (i = 0)) { return 0; } 
+        if ((j = (board.get_height()-1)) | (i = 0)) { return 0; } 
 
-        let cell = board.get_cell(i-1, j+1);
+        let cell = board.get_cell((i-1), (j+1));
         return cell.is_alive_int();
     }
     
     method int W() {
         if (i = 0) { return 0; } 
 
-        let cell = board.get_cell(i-1, j);
+        let cell = board.get_cell((i-1), j);
         return cell.is_alive_int();
     }
 
