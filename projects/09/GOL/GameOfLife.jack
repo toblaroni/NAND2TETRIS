@@ -56,20 +56,20 @@ class GameOfLife {
                 let new_cell       = new_board.get_cell(j, i);
                 let neighbor_count = current_cell.num_neighbours();
 
-                do Output.printString("I: ");
-                do Output.printInt(i);
-                do Output.printChar(" ");
-                do Output.printString("J: ");
-                do Output.printInt(j);
-                do Output.println();
-                do Output.printString("neighbour count: ");
-                do Output.printInt(neighbor_count);
-                do Sys.wait(300);
-                do Output.moveCursor(0, 0);
+                // do Output.printString("I: ");
+                // do Output.printInt(i);
+                // do Output.printChar(" ");
+                // do Output.printString("J: ");
+                // do Output.printInt(j);
+                // do Output.println();
+                // do Output.printString("neighbour count: ");
+                // do Output.printInt(neighbor_count);
+                // do Sys.wait(300);
+                // do Output.moveCursor(0, 0);
 
-                if (neighbor_count < 2 | neighbor_count > 3) {
+                if ((neighbor_count < 2) | (neighbor_count > 3)) {
                     do new_cell.kill();
-                } if (neighbor_count = 2 | neighbor_count = 3) {
+                } if ((neighbor_count = 2) | (neighbor_count = 3)) {
                     do new_cell.bring_alive();
                 }
 

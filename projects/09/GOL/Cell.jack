@@ -13,7 +13,6 @@ class Cell {
         let alive = alive_;
         let board = board_;
 
-
         let y = j * size_;
         let x = i * size_;
 
@@ -86,7 +85,7 @@ class Cell {
     method int E() {
         if (i = (board.get_width()-1)) { return 0; } 
 
-        let cell = board.get_cell((x+1), y);
+        let cell = board.get_cell((i+1), j);
         return cell.is_alive_int();
     }
 

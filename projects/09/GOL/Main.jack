@@ -2,7 +2,7 @@ class Main {
     function void main() {
         var GameOfLife gol; 
 
-        let gol = GameOfLife.new(7);
+        let gol = GameOfLife.new(5);
         do gol.draw();
 
         while (true) {
