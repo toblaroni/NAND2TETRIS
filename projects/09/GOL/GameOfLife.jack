@@ -1,23 +1,15 @@
 // Game of Life in Jack
 // The screen is 256 rows of 512 pixels.
 // OPTIMISATION -> Use a bitmap to render the cells...
+// Additions -> make it an "infinite" map by looping back round when reaching the edge of the board
 class GameOfLife {
     field Board board_1, board_2;     // Alternate between displaying one, and then displaying the other
     field boolean draw_board_1;       // Which board are we currently displaying
 
-    constructor GameOfLife new(int resolution) {
+    constructor GameOfLife new(int cell_size) {
         let draw_board_1 = false;   // Display board_1
-
-        if (resolution > 8) {
-            let resolution = 8;
-        }
-
-        if (resolution < 0) {
-            let resolution = 2;
-        }
-
-        let board_1 = Board.new(resolution);
-        let board_2 = Board.new(resolution);
+        let board_1 = Board.new(cell_size);
+        let board_2 = Board.new(cell_size);
         return this;
     }
 
@@ -56,21 +48,22 @@ class GameOfLife {
                 let new_cell       = new_board.get_cell(j, i);
                 let neighbor_count = current_cell.num_neighbours();
 
-                // do Output.printString("I: ");
-                // do Output.printInt(i);
-                // do Output.printChar(" ");
-                // do Output.printString("J: ");
-                // do Output.printInt(j);
-                // do Output.println();
-                // do Output.printString("neighbour count: ");
-                // do Output.printInt(neighbor_count);
-                // do Sys.wait(300);
-                // do Output.moveCursor(0, 0);
-
-                if ((neighbor_count < 2) | (neighbor_count > 3)) {
-                    do new_cell.kill();
-                } if ((neighbor_count = 2) | (neighbor_count = 3)) {
-                    do new_cell.bring_alive();
+                if (current_cell.is_alive()) {
+                    // Rule 1 and Rule 3: Any live cell with fewer than 2 or more than 3 live neighbors dies.
+                    if ((neighbor_count < 2) | (neighbor_count > 3)) {
+                        do new_cell.kill();
+                    }
+                    // // Rule 2: Any live cell with 2 or 3 live neighbors lives.
+                    if ((neighbor_count = 2) | (neighbor_count = 3)) {
+                        do new_cell.bring_alive();
+                    }
+                } else {
+                    // Rule 4: Any dead cell with exactly 3 live neighbors becomes a live cell.
+                    if (neighbor_count = 3) {
+                        do new_cell.bring_alive();
+                    } else {
+                        do new_cell.kill();
+                    }
                 }
 
                 let j = j + 1;

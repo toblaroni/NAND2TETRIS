@@ -2,12 +2,11 @@ class Main {
     function void main() {
         var GameOfLife gol; 
 
-        let gol = GameOfLife.new(5);
-        do gol.draw();
+        let gol = GameOfLife.new(30);
 
         while (true) {
-            do gol.update();
             do gol.draw();
+            do gol.update();
             do Sys.wait(500);
         }
 

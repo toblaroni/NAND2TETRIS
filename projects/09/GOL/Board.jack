@@ -4,11 +4,12 @@ class Board {
     field int num_cols, num_rows, cell_size;
     field Array rows;
 
-    constructor Board new(int resolution) {
+    constructor Board new(int cell_size) {     // have num_cols and num_rows here instead
         var int i, j, x, y;
         var Array row;
+        var boolean is_alive;
 
-        let cell_size = Board.pow(2, resolution) - 1;
+        let cell_size = cell_size;
 
         let num_rows = 256 / cell_size;
         let num_cols = 512 / cell_size;
@@ -27,7 +28,9 @@ class Board {
             while (j < num_cols) {
                 let x = j * cell_size;
 
-                let row[j] = Cell.new(j, i, cell_size, true, this);
+                let is_alive = glider_blinker_coords(i, j);
+
+                let row[j] = Cell.new(j, i, cell_size, is_alive, this);
 
                 let j = j + 1;
             }
@@ -73,6 +76,37 @@ class Board {
         return;
     }
 
+
+    method boolean glider_blinker_coords(int i, int j) {
+        if ((i=6) & (j=5)) { return true; }
+        if ((i=6) & (j=6)) { return true; }
+        if ((i=6) & (j=7)) { return true; }
+
+        // Glider
+        if ((i=2) & (j=1)) { return true; }
+        if ((i=3) & (j=2)) { return true; }
+        if ((i=1) & (j=3)) { return true; }
+        if ((i=2) & (j=3)) { return true; }
+        if ((i=3) & (j=3)) { return true; }
+        return false;
+
+    }
+
+    method boolean blinker_coords(int i, int j) {
+        if ((i=6) & (j=2)) { return true; }
+        if ((i=6) & (j=3)) { return true; }
+        if ((i=6) & (j=4)) { return true; }
+        return false;
+    }
+
+    method boolean glider_coords(int i, int j) {
+        if ((i=2) & (j=1)) { return true; }
+        if ((i=3) & (j=2)) { return true; }
+        if ((i=1) & (j=3)) { return true; }
+        if ((i=2) & (j=3)) { return true; }
+        if ((i=3) & (j=3)) { return true; }
+        return false;
+    }
 
     // Shouldn't really be in here
     function int pow(int base, int exponent) {
