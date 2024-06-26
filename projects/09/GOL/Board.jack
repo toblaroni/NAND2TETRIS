@@ -78,9 +78,9 @@ class Board {
 
 
     method boolean glider_blinker_coords(int i, int j) {
-        if ((i=6) & (j=5)) { return true; }
-        if ((i=6) & (j=6)) { return true; }
-        if ((i=6) & (j=7)) { return true; }
+        if ((i=4) & (j=11)) { return true; }
+        if ((i=4) & (j=12)) { return true; }
+        if ((i=4) & (j=13)) { return true; }
 
         // Glider
         if ((i=2) & (j=1)) { return true; }
