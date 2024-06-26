@@ -92,22 +92,6 @@ class Board {
 
     }
 
-    method boolean blinker_coords(int i, int j) {
-        if ((i=6) & (j=2)) { return true; }
-        if ((i=6) & (j=3)) { return true; }
-        if ((i=6) & (j=4)) { return true; }
-        return false;
-    }
-
-    method boolean glider_coords(int i, int j) {
-        if ((i=2) & (j=1)) { return true; }
-        if ((i=3) & (j=2)) { return true; }
-        if ((i=1) & (j=3)) { return true; }
-        if ((i=2) & (j=3)) { return true; }
-        if ((i=3) & (j=3)) { return true; }
-        return false;
-    }
-
     // Shouldn't really be in here
     function int pow(int base, int exponent) {
         var int res;
