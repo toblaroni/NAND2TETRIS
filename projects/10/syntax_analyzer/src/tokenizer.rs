@@ -1,8 +1,7 @@
 // Lexer
 
 use std::fs::File;
-use std::io::{self, BufReader};
-use std::path::Path;
+use std::io::BufReader;
 
 pub enum Keyword {
     Class,
@@ -45,5 +44,4 @@ pub struct Tokenizer {
 }
 
 impl Tokenizer {
-    pub fn new(source: Path) -> Result<Tokenizer, io::Error> {}
 }
