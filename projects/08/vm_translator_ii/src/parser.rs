@@ -53,6 +53,7 @@ pub struct Command {
    file_name:    String     // This is needed since static variables need to be xxx.j where xxx is the name of the vm file
 }
 
+
 pub struct Parser {
    current_command:     Option<Command>,
    reader:              BufReader<File>,

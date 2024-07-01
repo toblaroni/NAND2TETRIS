@@ -7,6 +7,7 @@ use crate::code_writer;
 
 pub fn vm_translate(input: String) {
     /* ==================================================================
+     *
      *  input  -> fileName.vm
      *  output -> fileName.asm
      *  
@@ -76,6 +77,7 @@ fn handle_input(input: &String) -> Vec<String> {
     files
 }
 
+
 fn create_output_file(vm_file: &String) -> String {
     if let Some(index) = vm_file.rfind(".vm") {
         vm_file[..index].to_string() + ".asm"
@@ -102,8 +104,6 @@ fn create_output_file(vm_file: &String) -> String {
         }
     }
 }
-
-
 
 
 pub fn translation_error(msg: &str) -> ! {
