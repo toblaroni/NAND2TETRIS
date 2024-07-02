@@ -1,11 +1,15 @@
+#![allow(non_snake_case)]
+
 use std::env;
+use std::io;
 use std::process::exit;
 
 mod compilation_engine;
 mod syntax_analyzer;
 mod tokenizer;
 
-fn main() {
+
+fn main() -> Result<(), io::Error> {
     let args: Vec<String> = env::args().collect();
 
     let input = if let 2 = args.len() {
@@ -15,13 +19,8 @@ fn main() {
         exit(-1)
     };
 
-    let syntax_analyzer = syntax_analyzer::SyntaxAnalyzer::new(input);
-    match syntax_analyzer {
-        Ok(analyzer) => {
-            println!("{:?}", analyzer.source_files)
-        }
-        Err(e) => {
-            println!("{}", e);
-        }
-    }
+    let s = syntax_analyzer::SyntaxAnalyzer::new(input)?;
+    let _ = s.analyze();
+
+    Ok(())
 }

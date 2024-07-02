@@ -3,8 +3,12 @@ use std::fs;
 use std::io;
 use std::path::{Path, PathBuf};
 
+use crate::tokenizer::Token;
+use crate::tokenizer::Tokenizer;
+
 pub struct SyntaxAnalyzer {
     pub source_files: Vec<PathBuf>,
+    pub output_files: Vec<PathBuf>,
 }
 
 impl SyntaxAnalyzer {
@@ -13,9 +17,22 @@ impl SyntaxAnalyzer {
         let files = Self::handle_input(input_path)?;
 
         Ok(SyntaxAnalyzer {
-            source_files: files
+            source_files: files,
+            output_files: Vec::new()
         })
     }
+
+    
+    pub fn analyze(self) -> Result<(), io::Error> {
+        // Loop through each of the source files
+        for source_file in self.source_files {
+            // Initialise a new tokeniser for each source file
+            let tokenizer = Tokenizer::new(source_file);
+        }
+        
+        Ok(())
+    }
+    
 
     fn handle_input(input: &Path) -> Result<Vec<PathBuf>, io::Error> {
         // Method to collect vm files for compilation
