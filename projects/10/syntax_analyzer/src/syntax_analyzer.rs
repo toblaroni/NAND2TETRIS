@@ -27,7 +27,13 @@ impl SyntaxAnalyzer {
         // Loop through each of the source files
         for source_file in self.source_files {
             // Initialise a new tokeniser for each source file
-            let tokenizer = Tokenizer::new(source_file);
+            let mut tokenizer = Tokenizer::new(source_file)?;
+            tokenizer.advance()?;
+
+            while tokenizer.has_more_tokens() {
+                println!("TOkenizing")
+            }
+
         }
         
         Ok(())

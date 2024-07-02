@@ -80,6 +80,9 @@ impl Tokenizer {
         }
     }
 
+    pub fn has_more_tokens(&self) -> bool {
+        self.has_more_tokens.clone()
+    }
 
     pub fn current_token(&self) -> Option<&Token> {
         self.current_token.as_ref()
