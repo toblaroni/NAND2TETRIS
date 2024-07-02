@@ -8,7 +8,6 @@ mod compilation_engine;
 mod syntax_analyzer;
 mod tokenizer;
 
-
 fn main() -> Result<(), io::Error> {
     let args: Vec<String> = env::args().collect();
 

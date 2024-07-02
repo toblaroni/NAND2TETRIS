@@ -2,18 +2,27 @@
 
 use std::fs::File;
 use std::path::PathBuf;
-use std::io::{self, BufRead, BufReader, Read};
+use std::io::{self, BufRead, BufReader};
 
-pub enum Keyword { Class, Method, Function, Constructor, Int, Boolean, Char, Void, Var, 
-                   Static, Field, Let, Do, If, Else, While, Return, True, False, Null, This }
+
+const SYMBOLS: [char; 19] = [
+    '{' , '}' , '(' , ')' , '[' , ']' , '.' ,
+    ',' , ';' , '+' , '-' , '*' , '/' , '&' ,
+    ',' , '<' , '>' , '=' , '~'
+];
+
+const KEYWORDS: [&str; 21] = [ 
+    "Class", "Method", "Function", "Constructor", "Int", "Boolean", "Char", "Void", "Var", 
+    "Static", "Field", "Let", "Do", "If", "Else", "While", "Return", "True", "False", "Null", "This", 
+];
 
 pub enum TokenType { Keyword, Symbol, Identifier, IntConst, StringConst }
 
 pub struct Token {
     token_type: TokenType,
     value: String,
-    keyword: Option<Keyword>
 }
+
 
 pub struct Tokenizer {
     reader: BufReader<File>,
@@ -22,6 +31,7 @@ pub struct Tokenizer {
     next_token: Option<Token>,
     current_line: Vec<char>
 }
+
 
 impl Tokenizer {
     pub fn new(source_file: PathBuf) -> Result<Tokenizer, io::Error> {
@@ -52,7 +62,10 @@ impl Tokenizer {
             // This can be its own function
             let mut line = String::new();
             match self.reader.read_line(&mut line) {
-                Ok(0) => self.has_more_tokens = false,  // EOF
+                Ok(0) => {  // EOF
+                    self.has_more_tokens = false;
+                    return Ok(None);
+                },
                 Ok(_) => {
                     if line.starts_with("//") || line.is_empty() {
                         self.advance()?;
@@ -66,7 +79,19 @@ impl Tokenizer {
             }
         }
 
-        // Deduce the next token from self.current_line
+        let c = self.current_line.remove(0);
+
+        // Is the first char a symbol?
+        if SYMBOLS.contains(&c) {
+            self.next_token = Some(Token {
+                token_type: TokenType::Symbol,
+                value: c.to_string()
+            });
+        }
+
+        // String constant
+        // Integer constant
+        // Keyword or identifier
 
         Ok(self.current_token.as_ref())
     }
