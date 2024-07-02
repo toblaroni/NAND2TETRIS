@@ -1,8 +1,6 @@
 use std::env;
 use std::process::exit;
 
-use crate::syntax_analyzer::SyntaxAnalyzer;
-
 mod compilation_engine;
 mod syntax_analyzer;
 mod tokenizer;
@@ -17,7 +15,7 @@ fn main() {
         exit(-1)
     };
 
-    let syntax_analyzer = SyntaxAnalyzer::new(input);
+    let syntax_analyzer = syntax_analyzer::SyntaxAnalyzer::new(input);
     match syntax_analyzer {
         Ok(analyzer) => {
             println!("{:?}", analyzer.source_files)
