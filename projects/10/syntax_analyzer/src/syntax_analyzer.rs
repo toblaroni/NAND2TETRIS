@@ -22,7 +22,7 @@ impl SyntaxAnalyzer {
         let mut files = Vec::new();
 
         // Input is either a file <file_name>.vm, or a directory containing multiple jack files
-        if Self::is_jack_file(&input) {
+        if Self::is_jack_file(input) {
             files.push(input.to_path_buf())
         } else if input.is_dir() {
             for entry in fs::read_dir(input)? {
