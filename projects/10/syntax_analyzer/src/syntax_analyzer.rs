@@ -29,7 +29,7 @@ impl SyntaxAnalyzer {
             tokenizer.advance()?;
 
             while tokenizer.has_more_tokens() {
-                println!("TOkenizing")
+                tokenizer.advance()?;
             }
         }
 
