@@ -10,27 +10,8 @@ const SYMBOLS: [char; 19] = [
 ];
 
 const KEYWORDS: [&str; 21] = [
-    "Class",
-    "Method",
-    "Function",
-    "Constructor",
-    "Int",
-    "Boolean",
-    "Char",
-    "Void",
-    "Var",
-    "Static",
-    "Field",
-    "Let",
-    "Do",
-    "If",
-    "Else",
-    "While",
-    "Return",
-    "True",
-    "False",
-    "Null",
-    "This",
+    "class", "method", "function", "constructor", "int", "boolean", "char", "void", "var", "static",
+    "field", "let", "do", "if", "else", "while", "return", "true", "false", "null", "this",
 ];
 
 #[derive(Debug)]
@@ -83,6 +64,7 @@ impl Tokenizer {
             return Ok(None)
         }
 
+        println!("Current Token: {:?}\nNext Token {:?}\n", self.current_token, self.next_token);
         self.current_token = self.next_token.take();
 
         if self.current_line.is_empty() {
@@ -103,11 +85,11 @@ impl Tokenizer {
             self.current_line.remove(0);
         } else if c == '"' {
             self.current_line.remove(0);
-            self.get_string_constant();
+            self.get_string_constant()?;
         } else if c.is_numeric() {
-            self.get_integer_constant();
+            self.get_integer_constant()?;
         } else if c.is_alphabetic() || c == '_' {
-            self.get_identifier_keyword();
+            self.get_identifier_keyword()?;
         } else {
             return Err(
                 io::Error::new(
@@ -120,6 +102,99 @@ impl Tokenizer {
         Ok(self.current_token.as_ref())
     }
 
+
+    fn get_integer_constant(&mut self) -> Result<(), io::Error> {
+        let mut value: Vec<char> = Vec::new();     
+
+        let mut c = self.current_line.remove(0);
+        while !c.is_whitespace() {
+            if !c.is_numeric() {
+                return Err(
+                    io::Error::new(
+                        io::ErrorKind::InvalidInput,
+                        format!("Encountered illegal character while parsing integer constant: {}.", c)
+                    )
+                )
+            } else if self.current_line.is_empty() || c == '\n' {
+                return Err(
+                    io::Error::new(
+                        io::ErrorKind::InvalidInput,
+                        "Newline encountered while parsing integer constant."
+                    )
+                )
+            }
+ 
+            value.push(c);
+            c = self.current_line.remove(0);
+        }
+
+        self.next_token = Some(Token {
+            value: String::from_iter(value),
+            token_type: TokenType::IntConst
+        });
+
+        Ok(())
+    }
+
+
+    fn get_identifier_keyword(&mut self) -> Result<(), io::Error> {
+        let mut value: Vec<char> = Vec::new();     
+
+        let mut c = self.current_line.remove(0);
+        while !c.is_whitespace() {
+            if self.current_line.is_empty() || c == '\n' {
+                return Err(
+                    io::Error::new(
+                        io::ErrorKind::InvalidInput,
+                        "Newline encountered while parsing identifier/keyword."
+                    )
+                )
+            }
+
+            value.push(c);
+            c = self.current_line.remove(0);
+        }
+
+        let value = String::from_iter(value);
+        let token_type = if KEYWORDS.contains(&value.as_str()) {TokenType::Keyword} else {TokenType::Identifier};
+
+        self.next_token = Some(Token {
+            value,
+            token_type
+        });
+
+        Ok(())
+    }
+
+
+    fn get_string_constant(&mut self) -> Result<(), io::Error> {
+        let mut value: Vec<char> = Vec::new();
+
+        // Set self.current_token to the string constant
+        let mut c = self.current_line.remove(0);
+        while c != '"' {
+            if self.current_line.is_empty() || c == '\n' {
+                return Err(
+                    io::Error::new(
+                        io::ErrorKind::InvalidInput,
+                        "Newline encountered while parsing string constant."
+                    )
+                )
+            }
+
+            value.push(c);
+            c = self.current_line.remove(0);
+        }
+
+        self.next_token = Some(Token {
+            value: String::from_iter(value),
+            token_type: TokenType::StringConst
+        });
+
+        Ok(())
+    }
+
+
     fn get_next_line(&mut self) -> Result<(), io::Error> {
         let mut line = String::new();
         match self.reader.read_line(&mut line) {
@@ -131,10 +206,12 @@ impl Tokenizer {
             Ok(_) => {
                 let line = line.trim().to_owned();
 
+                println!("Current line: {:?}", line);
                 let line = self.remove_inline_comment(line);
 
+                if line.is_empty() { self.get_next_line()?; }
+
                 self.current_line = line.chars().collect();
-                println!("Current line: {:?}", self.current_line);
 
             },
             Err(e) => return Err(e)
@@ -162,6 +239,7 @@ impl Tokenizer {
         self.trim_current_line();
         // For single line we just want to consume the current line and call advance again
         if self.current_line.starts_with(&['/', '/']) {
+            // TODO: I think single line comments might be handled in get_next_line tbh...
             println!("Consuming single line comment");
             self.current_line.clear();
             self.advance()?;
@@ -189,22 +267,6 @@ impl Tokenizer {
         let end = self.current_line.iter().rposition(|&c| !c.is_whitespace()).unwrap_or(self.current_line.len()-1);
         self.current_line.drain(..start);
         self.current_line.drain((end+1-start)..);
-    }
-
-    fn get_string_constant(&mut self) {
-        let mut temp: Vec<char> = Vec::new();
-
-        // Set self.current_token to the string constant
-        let mut c = self.current_line.remove(0);
-        while c != '"' {
-            temp.push(c);
-            c = self.current_line.remove(0);
-        }
-
-        self.current_token = Some(Token {
-            value: String::from_iter(temp),
-            token_type: TokenType::StringConst
-        });
     }
 
 

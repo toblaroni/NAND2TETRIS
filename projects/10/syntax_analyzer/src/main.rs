@@ -19,7 +19,13 @@ fn main() -> Result<(), io::Error> {
     };
 
     let s = syntax_analyzer::SyntaxAnalyzer::new(input)?;
-    let _ = s.analyze();
+    
+    match s.analyze() {
+        Ok(_) => println!("Analyzing finished successfully"),
+        Err(e) => {
+            println!("Error occurred while analyzing source: {}", e);
+        }
+    }
 
     Ok(())
 }
