@@ -30,6 +30,7 @@ impl SyntaxAnalyzer {
 
             while tokenizer.has_more_tokens() {
                 tokenizer.advance()?;
+                println!("{:?}", tokenizer.current_token());
             }
         }
 
