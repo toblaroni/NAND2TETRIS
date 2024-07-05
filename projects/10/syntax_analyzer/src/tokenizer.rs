@@ -37,12 +37,19 @@ pub struct Tokenizer {
     current_token: Option<Token>, // Value of current token
     next_token: Option<Token>,
     current_line: Vec<char>,
+    line_number: u32,
+    file_name: String
 }
 
 impl Tokenizer {
     pub fn new(source_file: PathBuf) -> Result<Tokenizer, io::Error> {
-        let file = File::open(source_file)?;
+        let file = File::open(&source_file)?;
         let reader = BufReader::new(file);
+
+        let file_name = source_file.file_name()
+                                   .unwrap()
+                                   .to_string_lossy()
+                                   .into_owned();
 
         Ok(Tokenizer {
             reader,
@@ -50,6 +57,8 @@ impl Tokenizer {
             current_token: None,
             next_token: None,
             current_line: Vec::new(),
+            line_number: 1,
+            file_name
         })
     }
 
@@ -70,6 +79,8 @@ impl Tokenizer {
         if self.current_line.is_empty() {
             self.get_next_line()?;
         }
+
+        if !self.has_more_tokens() { return Ok(None) }
 
         // cleans the self.current_line variable of all comments... (single-line, multi-line and inline comments)
         self.handle_comments()?;
@@ -107,19 +118,13 @@ impl Tokenizer {
         let mut value: Vec<char> = Vec::new();     
 
         let mut c = self.current_line.remove(0);
-        while !c.is_whitespace() {
-            if !c.is_numeric() {
+        while c.is_numeric() {
+            if self.current_line.is_empty() {
                 return Err(
                     io::Error::new(
                         io::ErrorKind::InvalidInput,
-                        format!("Encountered illegal character while parsing integer constant: {}.", c)
-                    )
-                )
-            } else if self.current_line.is_empty() || c == '\n' {
-                return Err(
-                    io::Error::new(
-                        io::ErrorKind::InvalidInput,
-                        "Newline encountered while parsing integer constant."
+                        format!("Unexpected end of line while parsing integer. Line {} in file {}",
+                                self.line_number, self.file_name)
                     )
                 )
             }
@@ -141,12 +146,13 @@ impl Tokenizer {
         let mut value: Vec<char> = Vec::new();     
 
         let mut c = self.current_line.remove(0);
-        while !c.is_whitespace() {
-            if self.current_line.is_empty() || c == '\n' {
+        while c.is_alphanumeric() || c == '_' {
+            if self.current_line.is_empty() {
                 return Err(
                     io::Error::new(
                         io::ErrorKind::InvalidInput,
-                        "Newline encountered while parsing identifier/keyword."
+                        format!("Unexpected end of line while parsing identifier/keyword. Line {} in file {}",
+                                self.line_number, self.file_name)
                     )
                 )
             }
@@ -173,11 +179,12 @@ impl Tokenizer {
         // Set self.current_token to the string constant
         let mut c = self.current_line.remove(0);
         while c != '"' {
-            if self.current_line.is_empty() || c == '\n' {
+            if self.current_line.is_empty() {
                 return Err(
                     io::Error::new(
                         io::ErrorKind::InvalidInput,
-                        "Newline encountered while parsing string constant."
+                        format!("Unexpected end of line while parsing string constant. Line {} in file {}",
+                                self.line_number, self.file_name)
                     )
                 )
             }
@@ -204,12 +211,16 @@ impl Tokenizer {
                 return Ok(());
             },
             Ok(_) => {
+                self.line_number += 1;
                 let line = line.trim().to_owned();
 
                 println!("Current line: {:?}", line);
                 let line = self.remove_inline_comment(line);
 
-                if line.is_empty() { self.get_next_line()?; }
+                if line.is_empty() { 
+                    println!("Current line is empty. Fetching new one.");
+                    self.get_next_line()?; 
+                }
 
                 self.current_line = line.chars().collect();
 
