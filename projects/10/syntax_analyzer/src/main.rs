@@ -1,14 +1,13 @@
 #![allow(non_snake_case)]
 
 use std::env;
-use std::io;
 use std::process::exit;
 
 mod compilation_engine;
 mod syntax_analyzer;
 mod tokenizer;
 
-fn main() -> Result<(), io::Error> {
+fn main() -> std::io::Result<()> {
     let args: Vec<String> = env::args().collect();
 
     let input = if let 2 = args.len() {

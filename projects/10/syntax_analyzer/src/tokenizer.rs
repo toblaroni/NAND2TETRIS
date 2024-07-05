@@ -159,7 +159,10 @@ impl Tokenizer {
 
             value.push(c);
             c = self.current_line.remove(0);
-        }
+        } 
+
+        // Add the c we just removed from current_line back into current_line
+        self.current_line.insert(0, c);
 
         let value = String::from_iter(value);
         let token_type = if KEYWORDS.contains(&value.as_str()) {TokenType::Keyword} else {TokenType::Identifier};
@@ -214,12 +217,13 @@ impl Tokenizer {
                 self.line_number += 1;
                 let line = line.trim().to_owned();
 
-                println!("Current line: {:?}", line);
                 let line = self.remove_inline_comment(line);
+                println!("Current line: {:?}", line);
 
                 if line.is_empty() { 
                     println!("Current line is empty. Fetching new one.");
                     self.get_next_line()?; 
+                    return Ok(())
                 }
 
                 self.current_line = line.chars().collect();
@@ -248,13 +252,7 @@ impl Tokenizer {
         if !self.has_more_tokens() { return Ok(()) }
 
         self.trim_current_line();
-        // For single line we just want to consume the current line and call advance again
-        if self.current_line.starts_with(&['/', '/']) {
-            // TODO: I think single line comments might be handled in get_next_line tbh...
-            println!("Consuming single line comment");
-            self.current_line.clear();
-            self.advance()?;
-        } else if self.current_line.starts_with(&['/', '*']) {
+        if self.current_line.starts_with(&['/', '*']) {
             // For multi-line, keep removing characters until we reach */
             while !self.current_line.starts_with(&['*', '/']) {
                 self.current_line.remove(0);
