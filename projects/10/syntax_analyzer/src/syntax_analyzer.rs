@@ -3,7 +3,7 @@ use std::fs;
 use std::io;
 use std::path::{Path, PathBuf};
 
-use crate::tokenizer::Tokenizer;
+use crate::compilation_engine::CompilationEngine;
 
 pub struct SyntaxAnalyzer {
     pub source_files: Vec<PathBuf>,
@@ -26,17 +26,9 @@ impl SyntaxAnalyzer {
         for source_file in self.source_files {
             println!("=========== Analyzing {:?} ===========", source_file);
             // Initialise a new tokeniser for each source file
-            let mut tokenizer = Tokenizer::new(source_file)?;
-            tokenizer.advance()?;
-
-            while tokenizer.has_more_tokens() {
-                println!(
-                    "Current Token: {:?}\nNext Token {:?}\n",
-                    tokenizer.current_token(), tokenizer.peek()
-                );
-
-                tokenizer.advance()?;
-            }
+            let mut ce = CompilationEngine::new(source_file)?;
+            ce.parse()?;
+            
         }
 
         Ok(())
