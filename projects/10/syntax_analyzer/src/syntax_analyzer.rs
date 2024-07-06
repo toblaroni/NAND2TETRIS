@@ -24,11 +24,17 @@ impl SyntaxAnalyzer {
     pub fn analyze(self) -> Result<(), io::Error> {
         // Loop through each of the source files
         for source_file in self.source_files {
+            println!("=========== Analyzing {:?} ===========", source_file);
             // Initialise a new tokeniser for each source file
             let mut tokenizer = Tokenizer::new(source_file)?;
             tokenizer.advance()?;
 
             while tokenizer.has_more_tokens() {
+                println!(
+                    "Current Token: {:?}\nNext Token {:?}\n",
+                    tokenizer.current_token(), tokenizer.peek()
+                );
+
                 tokenizer.advance()?;
             }
         }

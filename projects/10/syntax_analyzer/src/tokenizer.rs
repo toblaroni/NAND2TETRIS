@@ -5,8 +5,9 @@ use std::fs::File;
 use std::io::{self, BufRead, BufReader};
 use std::path::PathBuf;
 
-const SYMBOLS: [char; 19] = [
-    '{', '}', '(', ')', '[', ']', '.', ',', ';', '+', '-', '*', '/', '&', ',', '<', '>', '=', '~',
+const SYMBOLS: [char; 20] = [
+    '{', '}', '(', ')', '[', ']', '.', ',', ';', '+',
+    '-', '*', '/', '&', '|', ',', '<', '>', '=', '~',
 ];
 
 const KEYWORDS: [&str; 21] = [
@@ -73,7 +74,6 @@ impl Tokenizer {
             return Ok(None)
         }
 
-        println!("Current Token: {:?}\nNext Token {:?}\n", self.current_token, self.next_token);
         self.current_token = self.next_token.take();
 
         if self.current_line.is_empty() {
@@ -105,7 +105,10 @@ impl Tokenizer {
             return Err(
                 io::Error::new(
                     io::ErrorKind::InvalidInput,
-                    format!("Encountered illegal character {}.", c)
+                    format!(
+                        "Encountered illegal character {}. Line {} in file {}.",
+                        c, self.line_number, self.file_name
+                    )
                 )
             )
         }
@@ -255,6 +258,9 @@ impl Tokenizer {
         if self.current_line.starts_with(&['/', '*']) {
             // For multi-line, keep removing characters until we reach */
             while !self.current_line.starts_with(&['*', '/']) {
+                if self.current_line.is_empty() {
+                    self.get_next_line()?;
+                }
                 self.current_line.remove(0);
             }
 
