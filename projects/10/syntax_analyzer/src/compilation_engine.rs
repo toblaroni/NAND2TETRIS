@@ -1,9 +1,9 @@
 // Recursive top-down parser
-use std::io::{self, BufWriter};
+use std::io::{self, BufWriter, ErrorKind, Write};
 use std::path::PathBuf;
 use std::fs::File;
 
-use crate::tokenizer::Tokenizer;
+use crate::tokenizer::{Tokenizer, TokenType};
 
 
 pub struct CompilationEngine {
@@ -34,11 +34,29 @@ impl CompilationEngine {
     }
 
     pub fn parse(&mut self) -> Result<(), io::Error> {
-        self.compile_class()?;
-            Ok(())
+        // self.compile_class()?;
+        self.writer.write("<tokens>\n".as_bytes())?;
+        while self.tokenizer.has_more_tokens() {
+            self.tokenizer.advance()?;
+            if self.tokenizer.current_token().is_none() {
+                continue;
+            }
+            self.xml_emitter(false)?;
+        }
+        self.writer.write("</tokens>\n".as_bytes())?;
+        Ok(())
     }
 
     fn compile_class(&mut self) -> Result<(), io::Error> {
+        self.tokenizer.advance()?;
+        let ct = self.tokenizer.current_token();
+
+        if ct.is_none() {
+            return Err(
+                self.compilation_error("No tokens found.")
+            )
+        }
+
         Ok(())
     }
 
@@ -108,6 +126,36 @@ impl CompilationEngine {
          *      <xxxx> terminal </xxxx>
          */
 
+        let ct = self.tokenizer.current_token().unwrap();
+
+        let value = if let TokenType::Symbol = ct.get_token_type() {
+            match ct.get_value().as_str() {
+                "<" => "&lt;",
+                ">" => "&gt;",
+                "&" => "&amp;",
+                _   => &ct.get_value()
+            }
+        } else {
+            ct.get_value()
+        };
+
+        let xml_str = format!(
+            "<{}> {} </{}>\n",
+            ct.get_token_type(), value, ct.get_token_type()
+        ); 
+        self.writer.write_all(xml_str.as_bytes())?;
         Ok(())
+    }
+
+    fn compilation_error(&self, error: &str) -> io::Error {
+        io::Error::new(
+            ErrorKind::InvalidInput,
+            format!(
+                "{}. Line {} in file {}.",
+                error,
+                self.tokenizer.get_line_number(),
+                self.tokenizer.get_file_name()
+            )
+        )
     }
 }

@@ -4,6 +4,7 @@
 use std::fs::File;
 use std::io::{self, BufRead, BufReader};
 use std::path::PathBuf;
+use std::fmt;
 
 const SYMBOLS: [char; 20] = [
     '{', '}', '(', ')', '[', ']', '.', ',', ';', '+',
@@ -15,7 +16,7 @@ const KEYWORDS: [&str; 21] = [
     "field", "let", "do", "if", "else", "while", "return", "true", "false", "null", "this",
 ];
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub enum TokenType {
     Keyword,
     Symbol,
@@ -70,9 +71,7 @@ impl Tokenizer {
          *  self.next_token = get_next_token()
          */
 
-        if !self.has_more_tokens {
-            return Ok(None)
-        }
+        if !self.has_more_tokens { return Ok(None) }
 
         self.current_token = self.next_token.take();
 
@@ -135,6 +134,8 @@ impl Tokenizer {
             value.push(c);
             c = self.current_line.remove(0);
         }
+
+        self.current_line.insert(0, c);
 
         self.next_token = Some(Token {
             value: String::from_iter(value),
@@ -221,10 +222,10 @@ impl Tokenizer {
                 let line = line.trim().to_owned();
 
                 let line = self.remove_inline_comment(line);
-                println!("Current line: {:?}", line);
+                // println!("Current line: {:?}", line);
 
                 if line.is_empty() { 
-                    println!("Current line is empty. Fetching new one.");
+                    // println!("Current line is empty. Fetching new one.");
                     self.get_next_line()?; 
                     return Ok(())
                 }
@@ -260,6 +261,8 @@ impl Tokenizer {
             while !self.current_line.starts_with(&['*', '/']) {
                 if self.current_line.is_empty() {
                     self.get_next_line()?;
+                    self.trim_current_line();
+                    continue;
                 }
                 self.current_line.remove(0);
             }
@@ -267,7 +270,7 @@ impl Tokenizer {
             self.current_line.drain(0..2);  // Remove "*/"
            
             if self.current_line.is_empty() {
-                self.advance()?;
+                self.get_next_line()?;
             }
             self.trim_current_line();
             self.handle_comments()?;    // Might be multiple multi-line comments one after another
@@ -295,5 +298,37 @@ impl Tokenizer {
 
     pub fn peek(&self) -> Option<&Token> {
         self.next_token.as_ref()
+    }
+
+    pub fn get_line_number(&self) -> u32 {
+        self.line_number
+    }
+
+    pub fn get_file_name(&self) -> &String {
+        &self.file_name
+    }
+}
+
+
+impl Token {
+    pub fn get_value(&self) -> &String {
+        &self.value
+    }
+
+    pub fn get_token_type(&self) -> &TokenType {
+        &self.token_type
+    }
+}
+
+
+impl fmt::Display for TokenType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            TokenType::Identifier  => write!(f, "identifier"),
+            TokenType::Keyword     => write!(f, "keyword"),
+            TokenType::IntConst    => write!(f, "integerConstant"),
+            TokenType::Symbol      => write!(f, "symbol"),
+            TokenType::StringConst => write!(f, "stringConstant"),
+        }
     }
 }
