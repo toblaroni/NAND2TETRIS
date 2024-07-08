@@ -155,9 +155,9 @@ impl CompilationEngine {
                     io::Error::new(
                         ErrorKind::InvalidInput,
                         format!(
-                            "Expected '{}' {}. Line {} in file {}.",
-                            values.unwrap(),    // Need a more accurate way of writing these. It should be [<value1>, <value2>, ...]
-                            token_types,        // Same for this
+                            "Expected '{:?}' {:?}. Line {} in file {}.",
+                            values.unwrap(),                    // It should be [<value1>, <value2>, ...]
+                            token_types,                        // Same for this
                             self.tokenizer.get_line_number(),
                             self.tokenizer.get_file_name()
                         )
@@ -196,3 +196,4 @@ impl CompilationEngine {
         )
     }
 }
+
