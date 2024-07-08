@@ -24,7 +24,9 @@ impl CompilationEngine {
                                      .into_owned();
         
         let writer = BufWriter::new(output_file);
-        let tokenizer = Tokenizer::new(source_file)?;
+        let mut tokenizer = Tokenizer::new(source_file)?;
+
+        tokenizer.advance()?;
 
         Ok(CompilationEngine {
             tokenizer,
@@ -34,29 +36,27 @@ impl CompilationEngine {
     }
 
     pub fn parse(&mut self) -> Result<(), io::Error> {
-        // self.compile_class()?;
-        self.writer.write("<tokens>\n".as_bytes())?;
-        while self.tokenizer.has_more_tokens() {
-            self.tokenizer.advance()?;
-            if self.tokenizer.current_token().is_none() {
-                continue;
-            }
-            self.xml_emitter(false)?;
-        }
-        self.writer.write("</tokens>\n".as_bytes())?;
+        self.compile_class()?;
         Ok(())
     }
 
     fn compile_class(&mut self) -> Result<(), io::Error> {
+        self.writer.write_all("<class>".as_bytes())?;
         self.tokenizer.advance()?;
-        let ct = self.tokenizer.current_token();
 
-        if ct.is_none() {
+        if ct.get_token_type() != &TokenType::Keyword || ct.get_value() != "class" {
             return Err(
-                self.compilation_error("No tokens found.")
+                self.compilation_error("Expected 'class' keyword.")
             )
         }
 
+        self.emit_xml()?;
+
+        self.tokenizer.advance()?;
+
+        self.emit_xml()?;
+
+        self.writer.write_all("</class>".as_bytes())?;
         Ok(())
     }
 
@@ -113,18 +113,8 @@ impl CompilationEngine {
     }
 
 
-    fn xml_emitter(&mut self, is_terminal: bool) -> Result<(), io::Error> {
-        /* 
-         *  Print self.tokenizer.current_token() in xml form.
-         * 
-         *  Non-Terminal:
-         *      <xxxx>
-         *          Recursive Body of the xxx element
-         *      </xxxx>
-         * 
-         *  Terminal:
-         *      <xxxx> terminal </xxxx>
-         */
+    fn emit_xml(&mut self) -> Result<(), io::Error> {
+        // Prints self.tokenizer.current_token() in xml form.
 
         let ct = self.tokenizer.current_token().unwrap();
 
@@ -147,7 +137,54 @@ impl CompilationEngine {
         Ok(())
     }
 
+    fn check_token(&self, token_types: &[TokenType], values: Option<&[&str]>) -> Result<(), io::Error> {
+        // Check current token against params
+        let ct = if let Some(token) = self.tokenizer.current_token() {
+            token
+        } else {
+            return Err(
+                self.compilation_error("No tokens found.")
+            )
+        };
+
+
+        if values.is_some() {
+            let c_value = ct.get_value().as_str();
+            if !token_types.contains(ct.get_token_type()) || !values.unwrap().contains(&c_value) {
+                return Err(
+                    io::Error::new(
+                        ErrorKind::InvalidInput,
+                        format!(
+                            "Expected '{}' {}. Line {} in file {}.",
+                            values.unwrap(),    // Need a more accurate way of writing these. It should be [<value1>, <value2>, ...]
+                            token_types,        // Same for this
+                            self.tokenizer.get_line_number(),
+                            self.tokenizer.get_file_name()
+                        )
+                    )
+                )
+            }
+        } else {
+            if !token_types.contains(ct.get_token_type()) {
+                return Err(
+                    io::Error::new(
+                        ErrorKind::InvalidInput,
+                        format!(
+                            "Expected {:?}. Line {} in file {}.",
+                            token_types,
+                            self.tokenizer.get_line_number(),
+                            self.tokenizer.get_file_name()
+                        )
+                    )
+                )
+            }
+        }
+
+        Ok(())
+    }
+
     fn compilation_error(&self, error: &str) -> io::Error {
+        // This is perhaps not idiomatic for rust?...
         io::Error::new(
             ErrorKind::InvalidInput,
             format!(

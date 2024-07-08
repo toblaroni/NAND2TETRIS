@@ -16,7 +16,7 @@ const KEYWORDS: [&str; 21] = [
     "field", "let", "do", "if", "else", "while", "return", "true", "false", "null", "this",
 ];
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub enum TokenType {
     Keyword,
     Symbol,
