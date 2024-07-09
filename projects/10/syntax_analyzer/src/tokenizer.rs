@@ -105,7 +105,7 @@ impl Tokenizer {
                 io::Error::new(
                     io::ErrorKind::InvalidInput,
                     format!(
-                        "Encountered illegal character {}. Line {} in file {}.",
+                        "Encountered illegal character {}. Line {} in {}.",
                         c, self.line_number, self.file_name
                     )
                 )
@@ -125,7 +125,7 @@ impl Tokenizer {
                 return Err(
                     io::Error::new(
                         io::ErrorKind::InvalidInput,
-                        format!("Unexpected end of line while parsing integer. Line {} in file {}",
+                        format!("Unexpected end of line while parsing integer. Line {} in {}",
                                 self.line_number, self.file_name)
                     )
                 )
@@ -155,7 +155,7 @@ impl Tokenizer {
                 return Err(
                     io::Error::new(
                         io::ErrorKind::InvalidInput,
-                        format!("Unexpected end of line while parsing identifier/keyword. Line {} in file {}",
+                        format!("Unexpected end of line while parsing identifier/keyword. Line {} in {}",
                                 self.line_number, self.file_name)
                     )
                 )
@@ -190,7 +190,7 @@ impl Tokenizer {
                 return Err(
                     io::Error::new(
                         io::ErrorKind::InvalidInput,
-                        format!("Unexpected end of line while parsing string constant. Line {} in file {}",
+                        format!("Unexpected end of line while parsing string constant. Line {} in {}",
                                 self.line_number, self.file_name)
                     )
                 )
