@@ -60,7 +60,7 @@ impl CompilationEngine {
 
         // 0 or more
         loop {
-            match self.check_token(TokenType::Keyword, Some(&["static", "field"]), true) {
+            match self.check_token(TokenType::Keyword, Some(&["constructor", "method", "function"]), true) {
                 Ok(()) => self.compile_subroutine()?,
                 Err(_) => break
             }
@@ -76,7 +76,7 @@ impl CompilationEngine {
         self.writer.write_all("<classVarDec>\n".as_bytes())?;
         self.check_token(TokenType::Keyword, Some(&["static", "field"]), false)?;
 
-        self.check_type()?;
+        self.check_type(false)?;
 
         self.check_token(TokenType::Identifier, None, false)?;
 
@@ -98,18 +98,112 @@ impl CompilationEngine {
     }
 
     fn compile_subroutine(&mut self) -> Result<(), io::Error> {
+        self.writer.write_all("<subroutineDec>\n".as_bytes())?;
+        self.check_token(TokenType::Keyword, Some(&["constructor", "function", "method"]), false)?;
+
+        // ('void' | type)
+        match self.check_token(TokenType::Keyword, Some(&["void"]), true) {
+            Ok(()) => {
+                // Consume token and emit
+                self.tokenizer.advance()?;
+                self.emit_token()?;
+            }
+            Err(_) => {
+                // Consumes and emits a type if there's one
+                self.check_type(false)?;
+            }
+        }
+
+        self.check_token(TokenType::Identifier, None, false)?;
+        self.check_token(TokenType::Symbol, Some(&["("]), false)?;
+
+        self.compile_param_list()?;
+        self.check_token(TokenType::Symbol, Some(&[")"]), false)?;
+
+        self.compile_subroutine_body()?;
+
+        self.writer.write_all("</subroutineDec>\n".as_bytes())?;
         Ok(())
     }
 
     fn compile_param_list(&mut self) -> Result<(), io::Error> {
+        self.writer.write_all("<parameterList>\n".as_bytes())?;
+
+        match self.check_type(true) {
+            Ok(()) => {},
+            Err(_) => return Ok(())
+        };
+
+        // Consume type
+        self.tokenizer.advance()?;
+        self.emit_token()?;
+
+        self.check_token(TokenType::Identifier, None, false)?;
+
+        loop {
+            match self.check_token(TokenType::Symbol, Some(&[","]), true) {
+                Ok(()) => {
+                    // consume ','
+                    self.tokenizer.advance()?;
+                    self.emit_token()?;
+
+                    self.check_type(false)?;
+                    self.check_token(TokenType::Identifier, None, false)?;
+                }
+                Err(_) => break
+            }
+        }
+
+        self.writer.write_all("</parameterList>\n".as_bytes())?;
+        Ok(())
+    }
+
+    fn compile_subroutine_body(&mut self) -> Result<(), io::Error> {
+        self.writer.write_all("<subroutineBody>\n".as_bytes())?;
+        self.check_token(TokenType::Symbol, Some(&["{"]), false)?;
+
+        loop {
+            match self.check_token(TokenType::Keyword, Some(&["var"]), true) {
+                Ok(()) => self.compile_var_dec()?,
+                Err(_) => break
+            }
+        }
+
+        self.compile_statements()?;
+
+        self.check_token(TokenType::Symbol, Some(&["}"]), false)?;
+        self.writer.write_all("</subroutineBody>\n".as_bytes())?;
         Ok(())
     }
 
     fn compile_var_dec(&mut self) -> Result<(), io::Error> {
+        self.writer.write_all("<varDec>\n".as_bytes())?;
+
+        self.check_token(TokenType::Keyword, Some(&["var"]), false)?;
+        self.check_type(false)?;
+        self.check_token(TokenType::Identifier, None, false)?;
+
+        loop {
+            match self.check_token(TokenType::Symbol, Some(&[","]), true) {
+                Ok(()) => {
+                    self.tokenizer.advance()?;
+                    self.emit_token()?;
+
+                    self.check_token(TokenType::Identifier, None, false)?;
+                }
+                Err(_) => break
+            }
+        }
+
+        self.check_token(TokenType::Symbol, Some(&[";"]), false)?;
+
+        self.writer.write_all("</varDec>\n".as_bytes())?;
         Ok(())
     }
 
     fn compile_statements(&mut self) -> Result<(), io::Error> {
+        self.writer.write_all("<statements>\n".as_bytes())?;
+        self.writer.write_all("</statements>\n".as_bytes())?;
         Ok(())
     }
 
@@ -176,6 +270,10 @@ impl CompilationEngine {
         values: Option<&[&str]>, 
         next_token: bool
     ) -> Result<(), io::Error> {
+        /*
+            Checks current token or next token with the token_type and values (if any).
+            When checking current value it advances the tokenizer and emits the token in xml.
+         */
 
         let ct = if next_token {
             self.tokenizer.peek().ok_or_else(|| self.compilation_error("There is no next token."))?
@@ -209,20 +307,25 @@ impl CompilationEngine {
     }
 
 
-    fn check_type(&mut self) -> Result<(), io::Error> {
+    fn check_type(&mut self, next_token: bool) -> Result<(), io::Error> {
         self.tokenizer.advance()?;
 
-        let ct = self.tokenizer.current_token().ok_or_else(|| self.compilation_error("There is no current token."))?;
+        let ct = if next_token {
+            self.tokenizer.peek().ok_or_else(|| self.compilation_error("There is no next token."))?
+        } else {
+            self.tokenizer.advance()?;
+            self.tokenizer.current_token().ok_or_else(|| self.compilation_error("There is no current token."))?
+        };
        
         let token_value = ct.get_value();
         let token_type = ct.get_token_type();
        
         if *token_type == TokenType::Identifier {
-            self.emit_token()?;
+            if !next_token { self.emit_token()? }
             return Ok(())
         } else if *token_type == TokenType::Keyword  {
             if ["int", "char", "boolean"].contains(&token_value.as_str()) {
-                self.emit_token()?;
+                if !next_token { self.emit_token()? }
                 return Ok(())
             }
         }

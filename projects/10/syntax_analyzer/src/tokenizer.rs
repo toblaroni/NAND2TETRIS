@@ -11,10 +11,12 @@ const SYMBOLS: [char; 20] = [
     '-', '*', '/', '&', '|', ',', '<', '>', '=', '~',
 ];
 
+
 const KEYWORDS: [&str; 21] = [
     "class", "method", "function", "constructor", "int", "boolean", "char", "void", "var", "static",
     "field", "let", "do", "if", "else", "while", "return", "true", "false", "null", "this",
 ];
+
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum TokenType {
@@ -218,12 +220,12 @@ impl Tokenizer {
                 return Ok(());
             },
             Ok(_) => {
-                self.line_number += 1;
                 let line = line.trim().to_owned();
 
                 let line = self.remove_inline_comment(line);
                 // println!("Current line: {:?}", line);
 
+                self.line_number += 1;
                 if line.is_empty() { 
                     // println!("Current line is empty. Fetching new one.");
                     self.get_next_line()?; 
