@@ -131,7 +131,10 @@ impl CompilationEngine {
 
         match self.check_type(true) {
             Ok(()) => {},
-            Err(_) => return Ok(())
+            Err(_) => {
+                self.writer.write_all("</parameterList>\n".as_bytes())?;
+                return Ok(())
+            }
         };
 
         // Consume type
@@ -203,23 +206,51 @@ impl CompilationEngine {
 
     fn compile_statements(&mut self) -> Result<(), io::Error> {
         self.writer.write_all("<statements>\n".as_bytes())?;
+
+        loop {
+            match self.tokenizer.peek() {
+                Some(t) => {
+                    match t.get_value().as_str() {
+                        "let"    => self.compile_let()?,
+                        "if"     => self.compile_if()?,
+                        "while"  => self.compile_while()?,
+                        "do"     => self.compile_do()?,
+                        "return" => self.compile_return()?,
+                        _        => break
+                    }
+                }
+                None => {
+                    return Err(self.compilation_error("Expected ['let', 'if', 'while', 'do', 'return'"))
+                }
+            }
+
+        }
+
         self.writer.write_all("</statements>\n".as_bytes())?;
         Ok(())
     }
 
     fn compile_do(&mut self) -> Result<(), io::Error> {
+        self.writer.write_all("<doStatement>\n".as_bytes())?;
+        self.writer.write_all("</doStatement>\n".as_bytes())?;
         Ok(())
     }
 
     fn compile_let(&mut self) -> Result<(), io::Error> {
+        self.writer.write_all("<letStatement>\n".as_bytes())?;
+        self.writer.write_all("</letStatement>\n".as_bytes())?;
         Ok(())
     }
 
     fn compile_while(&mut self) -> Result<(), io::Error> {
+        self.writer.write_all("<whileStatement>\n".as_bytes())?;
+        self.writer.write_all("</whileStatement>\n".as_bytes())?;
         Ok(())
     }
 
     fn compile_return(&mut self) -> Result<(), io::Error> {
+        self.writer.write_all("</returnStatement>\n".as_bytes())?;
+        self.writer.write_all("</returnStatement>\n".as_bytes())?;
         Ok(())
     }
 
@@ -308,8 +339,6 @@ impl CompilationEngine {
 
 
     fn check_type(&mut self, next_token: bool) -> Result<(), io::Error> {
-        self.tokenizer.advance()?;
-
         let ct = if next_token {
             self.tokenizer.peek().ok_or_else(|| self.compilation_error("There is no next token."))?
         } else {
