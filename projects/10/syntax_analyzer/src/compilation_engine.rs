@@ -1,10 +1,10 @@
-use std::fmt::Error;
+use std::collections::btree_map::Keys;
 // Recursive top-down parser
 use std::io::{self, BufWriter, ErrorKind, Write};
 use std::path::PathBuf;
 use std::fs::File;
 
-use crate::tokenizer::{Tokenizer, TokenType, Token};
+use crate::tokenizer::{Tokenizer, TokenType};
 
 
 pub struct CompilationEngine {
@@ -232,6 +232,16 @@ impl CompilationEngine {
 
     fn compile_do(&mut self) -> Result<(), io::Error> {
         self.writer.write_all("<doStatement>\n".as_bytes())?;
+        
+        // Can just advance and emit since we know 'do' must be next
+        self.tokenizer.advance()?; 
+        self.emit_token()?;
+        
+        self.check_token(TokenType::Identifier, None, false)?;
+        self.check_token(TokenType::Symbol, Some(&["("]), false)?;
+        
+        self.compile_expression_list()?;
+        
         self.writer.write_all("</doStatement>\n".as_bytes())?;
         Ok(())
     }
@@ -258,18 +268,71 @@ impl CompilationEngine {
         Ok(())
     }
 
+
+    fn compile_expression_list(&mut self) -> Result<(), io::Error> {
+        self.writer.write_all("<expressionList>\n".as_bytes())?;
+
+        if let Ok(()) = self.check_token(TokenType::Symbol, Some(&[")"]), true) {
+            self.writer.write_all("</expressionList>\n".as_bytes())?;
+            return Ok(())
+        }
+
+        self.compile_expression()?;
+
+        self.writer.write_all("</expressionList>\n".as_bytes())?;
+        Ok(())
+    }
+
+
     fn compile_expression(&mut self) -> Result<(), io::Error> {
+        self.writer.write_all("<expression>\n".as_bytes())?;
+        self.compile_term()?;
+        self.writer.write_all("</expression>\n".as_bytes())?;
         Ok(())
     }
 
     fn compile_term(&mut self) -> Result<(), io::Error> {
+        self.writer.write_all("<term>\n".as_bytes())?;
+
+        if let Some(t) = self.tokenizer.peek() {
+            match t.get_token_type() {
+                TokenType::IntConst    => self.check_token(TokenType::IntConst, None, false)?,
+                TokenType::StringConst => self.check_token(TokenType::StringConst, None, false)?,
+                TokenType::Keyword     => self.check_token(TokenType::Keyword, Some(&["true", "false", "null", "this"]), false)?,
+                TokenType::Identifier  => self.handle_term_id()?,
+                TokenType::Symbol => {
+                    // '(' or '-' or '~'
+                }
+            }
+        }
+
+        self.writer.write_all("</term>\n".as_bytes())?;
         Ok(())
     }
 
-    fn compile_expression_list(&mut self) -> Result<(), io::Error> {
+    fn handle_term_id(&mut self) -> Result<(), io::Error> {
+
+        // varname | varname [expression] | subroutineCall 
+        // Consume the id
+        self.tokenizer.advance()?;
+        self.emit_token()?;
+
+        if let Some(t) = self.tokenizer.peek() {
+            match t.get_value().as_str() {
+                "[" => {
+                    self.tokenizer.advance()?;
+                    self.emit_token()?;
+                    self.compile_expression()?;
+                    self.check_token(TokenType::Symbol, Some(&["]"]), false)?;
+                }
+                "(" => {
+
+                }
+            }
+        }
+
         Ok(())
     }
-
 
     fn emit_token(&mut self) -> Result<(), io::Error> {
         // Prints self.tokenizer.current_token() in xml form.
@@ -363,6 +426,7 @@ impl CompilationEngine {
     }
 
 
+    // Would be better if we had our own custom error type 
     fn compilation_error(&self, error: &str) -> io::Error {
         // This is perhaps not idiomatic for rust?...
         io::Error::new(
