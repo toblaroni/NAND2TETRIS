@@ -279,6 +279,12 @@ impl CompilationEngine {
 
         self.compile_expression()?;
 
+        while let Ok(()) = self.check_token(TokenType::Symbol, Some(&[","]), true) {
+            self.tokenizer.advance()?;
+            self.emit_token()?;
+            self.compile_expression()?;
+        }
+
         self.writer.write_all("</expressionList>\n".as_bytes())?;
         Ok(())
     }
@@ -287,6 +293,16 @@ impl CompilationEngine {
     fn compile_expression(&mut self) -> Result<(), io::Error> {
         self.writer.write_all("<expression>\n".as_bytes())?;
         self.compile_term()?;
+
+        let ops = &["+", "-", "*", "/", "&", "|", "<", ">", "="];
+
+        // (op term)*
+        while let Ok(_) = self.check_token(TokenType::Symbol, Some(ops), true) {
+            self.tokenizer.advance()?;
+            self.emit_token()?;
+            self.compile_term()?;
+        }
+
         self.writer.write_all("</expression>\n".as_bytes())?;
         Ok(())
     }
@@ -300,9 +316,7 @@ impl CompilationEngine {
                 TokenType::StringConst => self.check_token(TokenType::StringConst, None, false)?,
                 TokenType::Keyword     => self.check_token(TokenType::Keyword, Some(&["true", "false", "null", "this"]), false)?,
                 TokenType::Identifier  => self.handle_term_id()?,
-                TokenType::Symbol => {
-                    // '(' or '-' or '~'
-                }
+                TokenType::Symbol      => self.handle_term_symbol()?
             }
         }
 
@@ -311,7 +325,6 @@ impl CompilationEngine {
     }
 
     fn handle_term_id(&mut self) -> Result<(), io::Error> {
-
         // varname | varname [expression] | subroutineCall 
         // Consume the id
         self.tokenizer.advance()?;
@@ -326,13 +339,55 @@ impl CompilationEngine {
                     self.check_token(TokenType::Symbol, Some(&["]"]), false)?;
                 }
                 "(" => {
+                    // Subroutine call
+                    self.tokenizer.advance()?;
+                    self.emit_token()?;
+                    self.compile_expression_list()?;
+                    self.check_token(TokenType::Symbol, Some(&[")"]), false)?;
+                }
+                "." => {
+                    // Subroutine call
+                    // .subroutine_name(expressionlist)
+                    self.tokenizer.advance()?;
+                    self.emit_token()?;
+                    self.check_token(TokenType::Identifier, None, false)?;
+                    self.check_token(TokenType::Symbol, Some(&["("]), false)?;
+                    self.compile_expression_list()?;
+                    self.check_token(TokenType::Symbol, Some(&[")"]), false)?;
+                }
+                _ => {}
+            }
+        }
+        Ok(())
+    }
+
+
+    fn handle_term_symbol(&mut self) -> Result<(), io::Error> {
+        if let Some(t) = self.tokenizer.peek() {
+            match t.get_value().as_str() {
+                "(" => {
+                    self.tokenizer.advance()?;
+                    self.emit_token()?;
+                    self.compile_expression()?;
+                    self.check_token(TokenType::Symbol, Some(&[")"]), false)?;
 
                 }
+                "-" | "~" => {  // Unary-op
+                    self.tokenizer.advance()?;
+                    self.emit_token()?;
+                    self.compile_term()?;
+                }
+                _ => return Err(
+                    self.compilation_error(
+                        &format!("Invalid symbol encountered while parsing term: {}", t.get_value())
+                    )
+                )
             }
         }
 
         Ok(())
     }
+
 
     fn emit_token(&mut self) -> Result<(), io::Error> {
         // Prints self.tokenizer.current_token() in xml form.
