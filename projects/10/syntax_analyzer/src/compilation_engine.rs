@@ -208,20 +208,19 @@ impl CompilationEngine {
         self.writer.write_all("<statements>\n".as_bytes())?;
 
         loop {
-            match self.tokenizer.peek() {
-                Some(t) => {
-                    match t.get_value().as_str() {
-                        "let"    => self.compile_let()?,
-                        "if"     => self.compile_if()?,
-                        "while"  => self.compile_while()?,
-                        "do"     => self.compile_do()?,
-                        "return" => self.compile_return()?,
-                        _        => break
-                    }
-                }
-                None => {
-                    return Err(self.compilation_error("Expected ['let', 'if', 'while', 'do', 'return'"))
-                }
+            let token = if let Some(t) = self.tokenizer.peek() {
+                t
+            } else {
+                return Err(self.compilation_error("Expected ['let', 'if', 'while', 'do', 'return'. No token was found."))
+            };
+
+            match token.get_value().as_str() {
+                "let"    => self.compile_let()?,
+                "if"     => self.compile_if()?,
+                "while"  => self.compile_while()?,
+                "do"     => self.compile_do()?,
+                "return" => self.compile_return()?,
+                _        => break
             }
 
         }
@@ -238,22 +237,52 @@ impl CompilationEngine {
         self.emit_token()?;
         
         self.check_token(TokenType::Identifier, None, false)?;
+
+        if let Ok(()) = self.check_token(TokenType::Symbol, Some(&["."]), true) {
+            // .subroutineName
+            self.tokenizer.advance()?;
+            self.emit_token()?;
+            self.check_token(TokenType::Identifier, None, false)?;
+        }
+
         self.check_token(TokenType::Symbol, Some(&["("]), false)?;
-        
         self.compile_expression_list()?;
-        
+        self.check_token(TokenType::Symbol, Some(&[")"]), false)?;
+        self.check_token(TokenType::Symbol, Some(&[";"]), false)?;
+
         self.writer.write_all("</doStatement>\n".as_bytes())?;
         Ok(())
     }
 
     fn compile_let(&mut self) -> Result<(), io::Error> {
         self.writer.write_all("<letStatement>\n".as_bytes())?;
+
+        self.check_token(TokenType::Keyword, Some(&["let"]), false)?;
+        self.check_token(TokenType::Identifier, None, false)?;
+
+        if let Ok(()) = self.check_token(TokenType::Symbol, Some(&["["]), true) {
+            self.tokenizer.advance()?;
+            self.emit_token()?;
+
+            self.compile_expression()?;
+
+            self.check_token(TokenType::Symbol, Some(&["]"]), false)?;
+        }
+
+        self.check_token(TokenType::Symbol, Some(&["="]), false)?;
+        self.compile_expression()?;
+        self.check_token(TokenType::Symbol, Some(&[";"]), false)?;
+
         self.writer.write_all("</letStatement>\n".as_bytes())?;
         Ok(())
     }
 
     fn compile_while(&mut self) -> Result<(), io::Error> {
         self.writer.write_all("<whileStatement>\n".as_bytes())?;
+
+        self.check_token(TokenType::Keyword, Some(&["while"]), false)?;
+        self.check_token(TokenType::Symbol, Some(&["("]), false)?;
+
         self.writer.write_all("</whileStatement>\n".as_bytes())?;
         Ok(())
     }
