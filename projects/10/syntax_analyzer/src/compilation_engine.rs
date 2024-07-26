@@ -43,19 +43,13 @@ impl CompilationEngine {
         self.check_token(TokenType::Symbol, Some(&["{"]), false)?;
 
         // 0 or more
-        loop {
-            match self.check_token(TokenType::Keyword, Some(&["static", "field"]), true) {
-                Ok(()) => self.compile_class_var_dec()?,
-                Err(_) => break
-            }
+        while self.check_token(TokenType::Keyword, Some(&["static", "field"]), true).is_ok() {
+            self.compile_class_var_dec()?;
         }
 
         // 0 or more
-        loop {
-            match self.check_token(TokenType::Keyword, Some(&["constructor", "method", "function"]), true) {
-                Ok(()) => self.compile_subroutine()?,
-                Err(_) => break
-            }
+        while self.check_token(TokenType::Keyword, Some(&["constructor", "method", "function"]), true).is_ok() {
+            self.compile_subroutine()?;
         }
 
         self.check_token(TokenType::Symbol, Some(&["}"]), false)?;
@@ -72,15 +66,10 @@ impl CompilationEngine {
 
         self.check_token(TokenType::Identifier, None, false)?;
 
-        loop {
-            match self.check_token(TokenType::Symbol, Some(&[","]), true) {
-                Ok(()) => {
-                    self.tokenizer.advance()?;
-                    self.emit_token()?;         // Emit the , symbol
-                    self.check_token(TokenType::Identifier, None, false)?;   // Consume and emit identifier
-                }
-                Err(_) => break
-            }
+        while self.check_token(TokenType::Symbol, Some(&[","]), true).is_ok() {
+            self.tokenizer.advance()?;
+            self.emit_token()?;         // Emit the , symbol
+            self.check_token(TokenType::Identifier, None, false)?;   // Consume and emit identifier
         }
 
         self.check_token(TokenType::Symbol, Some(&[";"]), false)?;
@@ -135,18 +124,13 @@ impl CompilationEngine {
 
         self.check_token(TokenType::Identifier, None, false)?;
 
-        loop {
-            match self.check_token(TokenType::Symbol, Some(&[","]), true) {
-                Ok(()) => {
-                    // consume ','
-                    self.tokenizer.advance()?;
-                    self.emit_token()?;
+        while self.check_token(TokenType::Symbol, Some(&[","]), true).is_ok() {
+            // consume ','
+            self.tokenizer.advance()?;
+            self.emit_token()?;
 
-                    self.check_type(false)?;
-                    self.check_token(TokenType::Identifier, None, false)?;
-                }
-                Err(_) => break
-            }
+            self.check_type(false)?;
+            self.check_token(TokenType::Identifier, None, false)?;
         }
 
         self.writer.write_all("</parameterList>\n".as_bytes())?;
@@ -157,11 +141,8 @@ impl CompilationEngine {
         self.writer.write_all("<subroutineBody>\n".as_bytes())?;
         self.check_token(TokenType::Symbol, Some(&["{"]), false)?;
 
-        loop {
-            match self.check_token(TokenType::Keyword, Some(&["var"]), true) {
-                Ok(()) => self.compile_var_dec()?,
-                Err(_) => break
-            }
+        while self.check_token(TokenType::Keyword, Some(&["var"]), true).is_ok() {
+            self.compile_var_dec()?
         }
 
         self.compile_statements()?;
@@ -178,16 +159,11 @@ impl CompilationEngine {
         self.check_type(false)?;
         self.check_token(TokenType::Identifier, None, false)?;
 
-        loop {
-            match self.check_token(TokenType::Symbol, Some(&[","]), true) {
-                Ok(()) => {
-                    self.tokenizer.advance()?;
-                    self.emit_token()?;
+        while self.check_token(TokenType::Symbol, Some(&[","]), true).is_ok() {
+            self.tokenizer.advance()?;
+            self.emit_token()?;
 
-                    self.check_token(TokenType::Identifier, None, false)?;
-                }
-                Err(_) => break
-            }
+            self.check_token(TokenType::Identifier, None, false)?;
         }
 
         self.check_token(TokenType::Symbol, Some(&[";"]), false)?;
@@ -291,7 +267,7 @@ impl CompilationEngine {
 
         self.check_token(TokenType::Keyword, Some(&["return"]), false)?;
 
-        if let Err(_) = self.check_token(TokenType::Symbol, Some(&[";"]), true) {
+        if self.check_token(TokenType::Symbol, Some(&[";"]), true).is_err() {
             self.compile_expression()?;
         }
 
@@ -354,7 +330,7 @@ impl CompilationEngine {
         let ops = &["+", "-", "*", "/", "&", "|", "<", ">", "="];
 
         // (op term)*
-        while let Ok(_) = self.check_token(TokenType::Symbol, Some(ops), true) {
+        while self.check_token(TokenType::Symbol, Some(ops), true).is_ok() {
             self.tokenizer.advance()?;
             self.emit_token()?;
             self.compile_term()?;
@@ -456,7 +432,7 @@ impl CompilationEngine {
                 "<" => "&lt;",
                 ">" => "&gt;",
                 "&" => "&amp;",
-                _   => &ct.get_value()
+                _   => ct.get_value()
             }
         } else {
             ct.get_value()
@@ -527,11 +503,13 @@ impl CompilationEngine {
         if *token_type == TokenType::Identifier {
             if !next_token { self.emit_token()? }
             return Ok(())
-        } else if *token_type == TokenType::Keyword  {
-            if ["int", "char", "boolean"].contains(&token_value.as_str()) {
-                if !next_token { self.emit_token()? }
-                return Ok(())
-            }
+        } 
+
+        if *token_type == TokenType::Keyword 
+            && ["int", "char", "boolean"].contains(&token_value.as_str()) {
+
+            if !next_token { self.emit_token()? }
+            return Ok(())
         }
 
         Err(self.compilation_error("Expected either [int | char | boolean | className]."))

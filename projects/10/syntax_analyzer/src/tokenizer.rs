@@ -291,7 +291,7 @@ impl Tokenizer {
 
 
     pub fn has_more_tokens(&self) -> bool {
-        self.has_more_tokens.clone()
+        self.has_more_tokens
     }
 
     pub fn current_token(&self) -> Option<&Token> {
