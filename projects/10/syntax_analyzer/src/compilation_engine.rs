@@ -1,4 +1,3 @@
-use std::collections::btree_map::Keys;
 // Recursive top-down parser
 use std::io::{self, BufWriter, ErrorKind, Write};
 use std::path::PathBuf;
@@ -9,8 +8,7 @@ use crate::tokenizer::{Tokenizer, TokenType};
 
 pub struct CompilationEngine {
     tokenizer: Tokenizer,
-    writer: BufWriter<File>,
-    output_file_name: String
+    writer: BufWriter<File>
 }
 
 impl CompilationEngine {
@@ -19,11 +17,6 @@ impl CompilationEngine {
         output.set_extension("xml");
         let output_file = File::create(&output)?;
         
-        let output_file_name = output.file_name()
-                                     .unwrap()
-                                     .to_string_lossy()
-                                     .into_owned();
-        
         let writer = BufWriter::new(output_file);
         let mut tokenizer = Tokenizer::new(source_file)?;
 
@@ -31,8 +24,7 @@ impl CompilationEngine {
 
         Ok(CompilationEngine {
             tokenizer,
-            writer,
-            output_file_name
+            writer
         })
     }
 
@@ -295,7 +287,7 @@ impl CompilationEngine {
 
     
     fn compile_return(&mut self) -> Result<(), io::Error> {
-        self.writer.write_all("</returnStatement>\n".as_bytes())?;
+        self.writer.write_all("<returnStatement>\n".as_bytes())?;
 
         self.check_token(TokenType::Keyword, Some(&["return"]), false)?;
 
