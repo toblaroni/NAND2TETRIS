@@ -279,21 +279,57 @@ impl CompilationEngine {
 
     fn compile_while(&mut self) -> Result<(), io::Error> {
         self.writer.write_all("<whileStatement>\n".as_bytes())?;
-
         self.check_token(TokenType::Keyword, Some(&["while"]), false)?;
+
         self.check_token(TokenType::Symbol, Some(&["("]), false)?;
+        self.compile_expression()?;        
+        self.check_token(TokenType::Symbol, Some(&[")"]), false)?;
+
+        self.check_token(TokenType::Symbol, Some(&["{"]), false)?;
+        self.compile_statements()?;
+        self.check_token(TokenType::Symbol, Some(&["}"]), false)?;
 
         self.writer.write_all("</whileStatement>\n".as_bytes())?;
         Ok(())
     }
 
+    
     fn compile_return(&mut self) -> Result<(), io::Error> {
         self.writer.write_all("</returnStatement>\n".as_bytes())?;
+
+        self.check_token(TokenType::Keyword, Some(&["return"]), false)?;
+
+        if let Err(_) = self.check_token(TokenType::Symbol, Some(&[";"]), true) {
+            self.compile_expression()?;
+        }
+
+        self.check_token(TokenType::Symbol, Some(&[";"]), false)?;
         self.writer.write_all("</returnStatement>\n".as_bytes())?;
         Ok(())
     }
 
+
     fn compile_if(&mut self) -> Result<(), io::Error> {
+        self.writer.write_all("<ifStatement>\n".as_bytes())?;
+        self.check_token(TokenType::Keyword, Some(&["if"]), false)?;
+
+        self.check_token(TokenType::Symbol, Some(&["("]), false)?;
+        self.compile_expression()?;
+        self.check_token(TokenType::Symbol, Some(&[")"]), false)?;
+
+        self.check_token(TokenType::Symbol, Some(&["{"]), false)?;
+        self.compile_statements()?;
+        self.check_token(TokenType::Symbol, Some(&["}"]), false)?;
+
+        if let Ok(()) = self.check_token(TokenType::Keyword, Some(&["else"]), true) {
+            self.tokenizer.advance()?;
+            self.emit_token()?;
+            self.check_token(TokenType::Symbol, Some(&["{"]), false)?;
+            self.compile_statements()?;
+            self.check_token(TokenType::Symbol, Some(&["}"]), false)?;
+        }
+
+        self.writer.write_all("</ifStatement>\n".as_bytes())?;
         Ok(())
     }
 
