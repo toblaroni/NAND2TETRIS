@@ -4,7 +4,7 @@ use std::env;
 use std::process::exit;
 
 mod compilation_engine;
-mod syntax_analyzer;
+mod jack_compiler;
 mod tokenizer;
 
 fn main() -> std::io::Result<()> {
@@ -17,9 +17,9 @@ fn main() -> std::io::Result<()> {
         exit(-1)
     };
 
-    let s = syntax_analyzer::SyntaxAnalyzer::new(input)?;
+    let c = jack_compiler::JackCompiler::new(input)?;
     
-    match s.analyze() {
+    match c.compile() {
         Ok(_) => println!("Analyzing finished successfully"),
         Err(e) => {
             println!("Error occurred while analyzing source: {}", e);
