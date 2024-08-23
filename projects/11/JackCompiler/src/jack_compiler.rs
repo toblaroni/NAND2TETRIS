@@ -15,7 +15,7 @@ impl JackCompiler {
         let input_path = Path::new(input);
         let files = Self::handle_input(input_path)?;
 
-        Ok(SyntaxAnalyzer {
+        Ok(JackCompiler {
             source_files: files,
             output_files: Vec::new(),
         })
@@ -27,7 +27,7 @@ impl JackCompiler {
             println!("=========== Analyzing {:?} ===========", source_file);
             // Initialise a new tokeniser for each source file
             let mut ce = CompilationEngine::new(source_file)?;
-            ce.parse()?;
+            ce.compile_class()?;
             
         }
 

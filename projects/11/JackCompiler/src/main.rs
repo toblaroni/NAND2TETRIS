@@ -6,6 +6,8 @@ use std::process::exit;
 mod compilation_engine;
 mod jack_compiler;
 mod tokenizer;
+mod symbol_table;
+mod vm_writer;
 
 fn main() -> std::io::Result<()> {
     let args: Vec<String> = env::args().collect();
@@ -13,7 +15,7 @@ fn main() -> std::io::Result<()> {
     let input = if let 2 = args.len() {
         args.get(1).unwrap()
     } else {
-        println!("Usage: cargo run -- <path-to-source>");
+        eprintln!("Usage: cargo run -- <path-to-source>");
         exit(-1)
     };
 
@@ -22,7 +24,7 @@ fn main() -> std::io::Result<()> {
     match c.compile() {
         Ok(_) => println!("Analyzing finished successfully"),
         Err(e) => {
-            println!("Error occurred while analyzing source: {}", e);
+            eprintln!("Error occurred while analyzing source: {}", e);
         }
     }
 

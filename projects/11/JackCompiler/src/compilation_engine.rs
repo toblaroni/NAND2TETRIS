@@ -28,12 +28,7 @@ impl CompilationEngine {
         })
     }
 
-    pub fn parse(&mut self) -> Result<(), io::Error> {
-        self.compile_class()?;
-        Ok(())
-    }
-
-    fn compile_class(&mut self) -> Result<(), io::Error> {
+    pub fn compile_class(&mut self) -> Result<(), io::Error> {
         self.writer.write_all("<class>\n".as_bytes())?;
 
         self.check_token(TokenType::Keyword, Some(&["class"]), false)?;     // Class keyword
