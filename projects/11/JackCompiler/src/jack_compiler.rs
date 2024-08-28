@@ -7,7 +7,6 @@ use crate::compilation_engine::CompilationEngine;
 
 pub struct JackCompiler {
     pub source_files: Vec<PathBuf>,
-    pub output_files: Vec<PathBuf>,
 }
 
 impl JackCompiler {
@@ -16,8 +15,7 @@ impl JackCompiler {
         let files = Self::handle_input(input_path)?;
 
         Ok(JackCompiler {
-            source_files: files,
-            output_files: Vec::new(),
+            source_files: files
         })
     }
 

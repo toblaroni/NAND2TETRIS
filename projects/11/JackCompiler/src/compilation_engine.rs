@@ -1,35 +1,39 @@
 // Recursive top-down parser
-use std::io::{self, BufWriter, ErrorKind, Write};
+use std::io::{self, ErrorKind};
 use std::path::PathBuf;
 use std::fs::File;
 
 use crate::tokenizer::{Tokenizer, TokenType};
+use crate::vm_writer::VMWriter;
 
+pub enum VMSegment { CONST, ARG, LOCAL, STATIC, THIS, THAT, POINTER, TEMP }
+pub enum ArithmeticCommand { ADD, SUB, NEG, EQ, GT, LT, AND, OR, NOT }
 
 pub struct CompilationEngine {
     tokenizer: Tokenizer,
-    writer: BufWriter<File>
+    vm_writer: VMWriter
 }
 
 impl CompilationEngine {
     pub fn new(source_file: PathBuf) -> Result<CompilationEngine, io::Error> {
         let mut output = source_file.clone();
+
         output.set_extension("xml");
         let output_file = File::create(&output)?;
         
-        let writer = BufWriter::new(output_file);
+        let vm_writer = VMWriter::new(output_file);
         let mut tokenizer = Tokenizer::new(source_file)?;
 
         tokenizer.advance()?;
 
         Ok(CompilationEngine {
             tokenizer,
-            writer
+            vm_writer
         })
     }
 
     pub fn compile_class(&mut self) -> Result<(), io::Error> {
-        self.writer.write_all("<class>\n".as_bytes())?;
+        self.vm_writer.write_all("<class>\n".as_bytes())?;
 
         self.check_token(TokenType::Keyword, Some(&["class"]), false)?;     // Class keyword
 
@@ -49,12 +53,12 @@ impl CompilationEngine {
 
         self.check_token(TokenType::Symbol, Some(&["}"]), false)?;
        
-        self.writer.write_all("</class>\n".as_bytes())?;
+        self.vm_writer.write_all("</class>\n".as_bytes())?;
         Ok(())
     }
 
     fn compile_class_var_dec(&mut self) -> Result<(), io::Error> {
-        self.writer.write_all("<classVarDec>\n".as_bytes())?;
+        self.vm_writer.write_all("<classVarDec>\n".as_bytes())?;
         self.check_token(TokenType::Keyword, Some(&["static", "field"]), false)?;
 
         self.check_type(false)?;
@@ -69,12 +73,12 @@ impl CompilationEngine {
 
         self.check_token(TokenType::Symbol, Some(&[";"]), false)?;
 
-        self.writer.write_all("</classVarDec>\n".as_bytes())?;
+        self.vm_writer.write_all("</classVarDec>\n".as_bytes())?;
         Ok(())
     }
 
     fn compile_subroutine(&mut self) -> Result<(), io::Error> {
-        self.writer.write_all("<subroutineDec>\n".as_bytes())?;
+        self.vm_writer.write_all("<subroutineDec>\n".as_bytes())?;
         self.check_token(TokenType::Keyword, Some(&["constructor", "function", "method"]), false)?;
 
         // ('void' | type)
@@ -98,17 +102,17 @@ impl CompilationEngine {
 
         self.compile_subroutine_body()?;
 
-        self.writer.write_all("</subroutineDec>\n".as_bytes())?;
+        self.vm_writer.write_all("</subroutineDec>\n".as_bytes())?;
         Ok(())
     }
 
     fn compile_param_list(&mut self) -> Result<(), io::Error> {
-        self.writer.write_all("<parameterList>\n".as_bytes())?;
+        self.vm_writer.write_all("<parameterList>\n".as_bytes())?;
 
         match self.check_type(true) {
             Ok(()) => {},
             Err(_) => {
-                self.writer.write_all("</parameterList>\n".as_bytes())?;
+                self.vm_writer.write_all("</parameterList>\n".as_bytes())?;
                 return Ok(())
             }
         };
@@ -128,12 +132,12 @@ impl CompilationEngine {
             self.check_token(TokenType::Identifier, None, false)?;
         }
 
-        self.writer.write_all("</parameterList>\n".as_bytes())?;
+        self.vm_writer.write_all("</parameterList>\n".as_bytes())?;
         Ok(())
     }
 
     fn compile_subroutine_body(&mut self) -> Result<(), io::Error> {
-        self.writer.write_all("<subroutineBody>\n".as_bytes())?;
+        self.vm_writer.write_all("<subroutineBody>\n".as_bytes())?;
         self.check_token(TokenType::Symbol, Some(&["{"]), false)?;
 
         while self.check_token(TokenType::Keyword, Some(&["var"]), true).is_ok() {
@@ -143,12 +147,12 @@ impl CompilationEngine {
         self.compile_statements()?;
 
         self.check_token(TokenType::Symbol, Some(&["}"]), false)?;
-        self.writer.write_all("</subroutineBody>\n".as_bytes())?;
+        self.vm_writer.write_all("</subroutineBody>\n".as_bytes())?;
         Ok(())
     }
 
     fn compile_var_dec(&mut self) -> Result<(), io::Error> {
-        self.writer.write_all("<varDec>\n".as_bytes())?;
+        self.vm_writer.write_all("<varDec>\n".as_bytes())?;
 
         self.check_token(TokenType::Keyword, Some(&["var"]), false)?;
         self.check_type(false)?;
@@ -163,12 +167,12 @@ impl CompilationEngine {
 
         self.check_token(TokenType::Symbol, Some(&[";"]), false)?;
 
-        self.writer.write_all("</varDec>\n".as_bytes())?;
+        self.vm_writer.write_all("</varDec>\n".as_bytes())?;
         Ok(())
     }
 
     fn compile_statements(&mut self) -> Result<(), io::Error> {
-        self.writer.write_all("<statements>\n".as_bytes())?;
+        self.vm_writer.write_all("<statements>\n".as_bytes())?;
 
         loop {
             let token = if let Some(t) = self.tokenizer.peek() {
@@ -188,12 +192,12 @@ impl CompilationEngine {
 
         }
 
-        self.writer.write_all("</statements>\n".as_bytes())?;
+        self.vm_writer.write_all("</statements>\n".as_bytes())?;
         Ok(())
     }
 
     fn compile_do(&mut self) -> Result<(), io::Error> {
-        self.writer.write_all("<doStatement>\n".as_bytes())?;
+        self.vm_writer.write_all("<doStatement>\n".as_bytes())?;
         
         // Can just advance and emit since we know 'do' must be next
         self.tokenizer.advance()?; 
@@ -213,12 +217,12 @@ impl CompilationEngine {
         self.check_token(TokenType::Symbol, Some(&[")"]), false)?;
         self.check_token(TokenType::Symbol, Some(&[";"]), false)?;
 
-        self.writer.write_all("</doStatement>\n".as_bytes())?;
+        self.vm_writer.write_all("</doStatement>\n".as_bytes())?;
         Ok(())
     }
 
     fn compile_let(&mut self) -> Result<(), io::Error> {
-        self.writer.write_all("<letStatement>\n".as_bytes())?;
+        self.vm_writer.write_all("<letStatement>\n".as_bytes())?;
 
         self.check_token(TokenType::Keyword, Some(&["let"]), false)?;
         self.check_token(TokenType::Identifier, None, false)?;
@@ -236,12 +240,12 @@ impl CompilationEngine {
         self.compile_expression()?;
         self.check_token(TokenType::Symbol, Some(&[";"]), false)?;
 
-        self.writer.write_all("</letStatement>\n".as_bytes())?;
+        self.vm_writer.write_all("</letStatement>\n".as_bytes())?;
         Ok(())
     }
 
     fn compile_while(&mut self) -> Result<(), io::Error> {
-        self.writer.write_all("<whileStatement>\n".as_bytes())?;
+        self.vm_writer.write_all("<whileStatement>\n".as_bytes())?;
         self.check_token(TokenType::Keyword, Some(&["while"]), false)?;
 
         self.check_token(TokenType::Symbol, Some(&["("]), false)?;
@@ -252,13 +256,13 @@ impl CompilationEngine {
         self.compile_statements()?;
         self.check_token(TokenType::Symbol, Some(&["}"]), false)?;
 
-        self.writer.write_all("</whileStatement>\n".as_bytes())?;
+        self.vm_writer.write_all("</whileStatement>\n".as_bytes())?;
         Ok(())
     }
 
     
     fn compile_return(&mut self) -> Result<(), io::Error> {
-        self.writer.write_all("<returnStatement>\n".as_bytes())?;
+        self.vm_writer.write_all("<returnStatement>\n".as_bytes())?;
 
         self.check_token(TokenType::Keyword, Some(&["return"]), false)?;
 
@@ -267,13 +271,13 @@ impl CompilationEngine {
         }
 
         self.check_token(TokenType::Symbol, Some(&[";"]), false)?;
-        self.writer.write_all("</returnStatement>\n".as_bytes())?;
+        self.vm_writer.write_all("</returnStatement>\n".as_bytes())?;
         Ok(())
     }
 
 
     fn compile_if(&mut self) -> Result<(), io::Error> {
-        self.writer.write_all("<ifStatement>\n".as_bytes())?;
+        self.vm_writer.write_all("<ifStatement>\n".as_bytes())?;
         self.check_token(TokenType::Keyword, Some(&["if"]), false)?;
 
         self.check_token(TokenType::Symbol, Some(&["("]), false)?;
@@ -292,16 +296,16 @@ impl CompilationEngine {
             self.check_token(TokenType::Symbol, Some(&["}"]), false)?;
         }
 
-        self.writer.write_all("</ifStatement>\n".as_bytes())?;
+        self.vm_writer.write_all("</ifStatement>\n".as_bytes())?;
         Ok(())
     }
 
 
     fn compile_expression_list(&mut self) -> Result<(), io::Error> {
-        self.writer.write_all("<expressionList>\n".as_bytes())?;
+        self.vm_writer.write_all("<expressionList>\n".as_bytes())?;
 
         if let Ok(()) = self.check_token(TokenType::Symbol, Some(&[")"]), true) {
-            self.writer.write_all("</expressionList>\n".as_bytes())?;
+            self.vm_writer.write_all("</expressionList>\n".as_bytes())?;
             return Ok(())
         }
 
@@ -313,13 +317,13 @@ impl CompilationEngine {
             self.compile_expression()?;
         }
 
-        self.writer.write_all("</expressionList>\n".as_bytes())?;
+        self.vm_writer.write_all("</expressionList>\n".as_bytes())?;
         Ok(())
     }
 
 
     fn compile_expression(&mut self) -> Result<(), io::Error> {
-        self.writer.write_all("<expression>\n".as_bytes())?;
+        self.vm_writer.write_all("<expression>\n".as_bytes())?;
         self.compile_term()?;
 
         let ops = &["+", "-", "*", "/", "&", "|", "<", ">", "="];
@@ -331,12 +335,12 @@ impl CompilationEngine {
             self.compile_term()?;
         }
 
-        self.writer.write_all("</expression>\n".as_bytes())?;
+        self.vm_writer.write_all("</expression>\n".as_bytes())?;
         Ok(())
     }
 
     fn compile_term(&mut self) -> Result<(), io::Error> {
-        self.writer.write_all("<term>\n".as_bytes())?;
+        self.vm_writer.write_all("<term>\n".as_bytes())?;
 
         if let Some(t) = self.tokenizer.peek() {
             match t.get_token_type() {
@@ -348,7 +352,7 @@ impl CompilationEngine {
             }
         }
 
-        self.writer.write_all("</term>\n".as_bytes())?;
+        self.vm_writer.write_all("</term>\n".as_bytes())?;
         Ok(())
     }
 
@@ -437,7 +441,7 @@ impl CompilationEngine {
             "<{}> {} </{}>\n",
             ct.get_token_type(), value, ct.get_token_type()
         ); 
-        self.writer.write_all(xml_str.as_bytes())?;
+        self.vm_writer.write_all(xml_str.as_bytes())?;
         Ok(())
     }
 

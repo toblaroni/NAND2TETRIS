@@ -71,6 +71,6 @@ impl SymbolTable {
 
 
     pub fn index_of(&mut self, name: &String) -> u32 {
-
+        unimplemented!()
     }
 }
