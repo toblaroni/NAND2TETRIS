@@ -354,9 +354,9 @@ impl CompilationEngine {
 
         if let Some(t) = self.tokenizer.peek() {
             match t.get_token_type() {
-                TokenType::IntConst    => { self.check_token(TokenType::IntConst, None, false)?; },
-                TokenType::StringConst => { self.check_token(TokenType::StringConst, None, false)?; },
-                TokenType::Keyword     => { self.check_token(TokenType::Keyword, Some(&["true", "false", "null", "this"]), false)?; },
+                TokenType::IntConst    => self.check_token(TokenType::IntConst, None, false)?,
+                TokenType::StringConst => self.check_token(TokenType::StringConst, None, false)?,
+                TokenType::Keyword     => self.check_token(TokenType::Keyword, Some(&["true", "false", "null", "this"]), false)?,
                 TokenType::Identifier  => self.handle_term_id()?,
                 TokenType::Symbol      => self.handle_term_symbol()?
             }
@@ -460,7 +460,7 @@ impl CompilationEngine {
         token_type: TokenType, 
         values: Option<&[&str]>, 
         peek: bool
-    ) -> Result<&String, io::Error> {
+    ) -> Result<(), io::Error> {
         /*
             Checks current token or next token with the token_type and values (if any).
             When checking current value it advances the tokenizer and emits the token in xml.
@@ -496,7 +496,7 @@ impl CompilationEngine {
             self.emit_token()? 
         }
 
-        Ok(self.tokenizer.current_token().unwrap().get_value())
+        Ok(())
     }
 
 
