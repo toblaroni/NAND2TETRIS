@@ -3,15 +3,18 @@ use std::io::{self, ErrorKind};
 use std::path::PathBuf;
 use std::fs::File;
 
+use crate::symbol_table::SymbolTable;
 use crate::tokenizer::{Tokenizer, TokenType};
 use crate::vm_writer::VMWriter;
+use crate::symbol_table::SymbolKind;
 
 pub enum VMSegment { CONST, ARG, LOCAL, STATIC, THIS, THAT, POINTER, TEMP }
 pub enum ArithmeticCommand { ADD, SUB, NEG, EQ, GT, LT, AND, OR, NOT }
 
 pub struct CompilationEngine {
     tokenizer: Tokenizer,
-    vm_writer: VMWriter
+    vm_writer: VMWriter,
+    symbol_table: SymbolTable
 }
 
 impl CompilationEngine {
@@ -28,7 +31,8 @@ impl CompilationEngine {
 
         Ok(CompilationEngine {
             tokenizer,
-            vm_writer
+            vm_writer,
+            symbol_table: SymbolTable::new()
         })
     }
 
@@ -57,13 +61,18 @@ impl CompilationEngine {
         Ok(())
     }
 
+
     fn compile_class_var_dec(&mut self) -> Result<(), io::Error> {
         self.vm_writer.write_all("<classVarDec>\n".as_bytes())?;
+
+
+        // Don't use check_token. We need to build up the token and then 
+        // emit it with either an adapted emit_token() function or a new function 
+        // entirely...
         self.check_token(TokenType::Keyword, Some(&["static", "field"]), false)?;
-
         self.check_type(false)?;
-
         self.check_token(TokenType::Identifier, None, false)?;
+
 
         while self.check_token(TokenType::Symbol, Some(&[","]), true).is_ok() {
             self.tokenizer.advance()?;
@@ -77,13 +86,14 @@ impl CompilationEngine {
         Ok(())
     }
 
+
     fn compile_subroutine(&mut self) -> Result<(), io::Error> {
         self.vm_writer.write_all("<subroutineDec>\n".as_bytes())?;
         self.check_token(TokenType::Keyword, Some(&["constructor", "function", "method"]), false)?;
 
         // ('void' | type)
         match self.check_token(TokenType::Keyword, Some(&["void"]), true) {
-            Ok(()) => {
+            Ok(_) => {
                 // Consume token and emit
                 self.tokenizer.advance()?;
                 self.emit_token()?;
@@ -205,7 +215,7 @@ impl CompilationEngine {
         
         self.check_token(TokenType::Identifier, None, false)?;
 
-        if let Ok(()) = self.check_token(TokenType::Symbol, Some(&["."]), true) {
+        if let Ok(_) = self.check_token(TokenType::Symbol, Some(&["."]), true) {
             // .subroutineName
             self.tokenizer.advance()?;
             self.emit_token()?;
@@ -227,7 +237,7 @@ impl CompilationEngine {
         self.check_token(TokenType::Keyword, Some(&["let"]), false)?;
         self.check_token(TokenType::Identifier, None, false)?;
 
-        if let Ok(()) = self.check_token(TokenType::Symbol, Some(&["["]), true) {
+        if let Ok(_) = self.check_token(TokenType::Symbol, Some(&["["]), true) {
             self.tokenizer.advance()?;
             self.emit_token()?;
 
@@ -288,7 +298,7 @@ impl CompilationEngine {
         self.compile_statements()?;
         self.check_token(TokenType::Symbol, Some(&["}"]), false)?;
 
-        if let Ok(()) = self.check_token(TokenType::Keyword, Some(&["else"]), true) {
+        if let Ok(_) = self.check_token(TokenType::Keyword, Some(&["else"]), true) {
             self.tokenizer.advance()?;
             self.emit_token()?;
             self.check_token(TokenType::Symbol, Some(&["{"]), false)?;
@@ -304,14 +314,14 @@ impl CompilationEngine {
     fn compile_expression_list(&mut self) -> Result<(), io::Error> {
         self.vm_writer.write_all("<expressionList>\n".as_bytes())?;
 
-        if let Ok(()) = self.check_token(TokenType::Symbol, Some(&[")"]), true) {
+        if let Ok(_) = self.check_token(TokenType::Symbol, Some(&[")"]), true) {
             self.vm_writer.write_all("</expressionList>\n".as_bytes())?;
             return Ok(())
         }
 
         self.compile_expression()?;
 
-        while let Ok(()) = self.check_token(TokenType::Symbol, Some(&[","]), true) {
+        while let Ok(_) = self.check_token(TokenType::Symbol, Some(&[","]), true) {
             self.tokenizer.advance()?;
             self.emit_token()?;
             self.compile_expression()?;
@@ -344,9 +354,9 @@ impl CompilationEngine {
 
         if let Some(t) = self.tokenizer.peek() {
             match t.get_token_type() {
-                TokenType::IntConst    => self.check_token(TokenType::IntConst, None, false)?,
-                TokenType::StringConst => self.check_token(TokenType::StringConst, None, false)?,
-                TokenType::Keyword     => self.check_token(TokenType::Keyword, Some(&["true", "false", "null", "this"]), false)?,
+                TokenType::IntConst    => { self.check_token(TokenType::IntConst, None, false)?; },
+                TokenType::StringConst => { self.check_token(TokenType::StringConst, None, false)?; },
+                TokenType::Keyword     => { self.check_token(TokenType::Keyword, Some(&["true", "false", "null", "this"]), false)?; },
                 TokenType::Identifier  => self.handle_term_id()?,
                 TokenType::Symbol      => self.handle_term_symbol()?
             }
@@ -449,14 +459,14 @@ impl CompilationEngine {
         &mut self,
         token_type: TokenType, 
         values: Option<&[&str]>, 
-        next_token: bool
-    ) -> Result<(), io::Error> {
+        peek: bool
+    ) -> Result<&String, io::Error> {
         /*
             Checks current token or next token with the token_type and values (if any).
             When checking current value it advances the tokenizer and emits the token in xml.
          */
 
-        let ct = if next_token {
+        let ct = if peek {
             self.tokenizer.peek().ok_or_else(|| self.compilation_error("There is no next token."))?
         } else {
             self.tokenizer.advance()?;
@@ -482,9 +492,11 @@ impl CompilationEngine {
             )
         }
 
-        if !next_token { self.emit_token()? }
+        if !peek { 
+            self.emit_token()? 
+        }
 
-        Ok(())
+        Ok(self.tokenizer.current_token().unwrap().get_value())
     }
 
 

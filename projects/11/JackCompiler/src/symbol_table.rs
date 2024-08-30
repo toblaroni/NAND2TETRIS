@@ -1,22 +1,16 @@
-enum SymbolKind {       // This is according to the nand2tetris book definition
+
+use crate::tokenizer::TokenType;
+
+pub enum SymbolKind {       // This is according to the nand2tetris book definition
     STATIC, 
     FIELD,
     ARG,
-    VAR,
-    NONE
-}
-
-enum SymbolType {
-    INT,
-    BOOL,
-    CHAR,
-    VOID,
-    NONE
+    VAR
 }
 
 struct Symbol {
     name: String,
-    symType: SymbolType,
+    symType: String,
     index: u32,
     kind: SymbolKind
 }
@@ -55,19 +49,18 @@ impl SymbolTable {
     }
 
 
-    pub fn define(&mut self, name: &str, symType: SymbolType, kind: SymbolKind) {
+    pub fn define(&mut self, name: &str, symType: &String, kind: SymbolKind) {
         // Adds a new symbol to the appropriate symbol table
         let (symbols, counter) = match kind {
             SymbolKind::ARG    => (&mut self.subroutine_symbols, &mut self.num_arg),
             SymbolKind::VAR    => (&mut self.subroutine_symbols, &mut self.num_var),
             SymbolKind::FIELD  => (&mut self.class_symbols, &mut self.num_field),
             SymbolKind::STATIC => (&mut self.class_symbols, &mut self.num_static),
-            SymbolKind::NONE   => return
-        }
+        };
 
         symbols.push(Symbol {
             name: name.to_string(),
-            symType,
+            symType: symType.clone(),
             index: *counter,
             kind
         });
@@ -80,44 +73,43 @@ impl SymbolTable {
             SymbolKind::ARG    => self.num_arg,
             SymbolKind::VAR    => self.num_var,
             SymbolKind::FIELD  => self.num_field,
-            SymbolKind::STATIC => self.num_static,
-            SymbolKind::NONE   => 0
+            SymbolKind::STATIC => self.num_static
         }
     }
 
 
-    pub fn kind_of(&self, name: &String) -> &SymbolKind {
+    pub fn kind_of(&self, name: &String) -> Option<&SymbolKind> {
         for symbol in self.class_symbols.iter().chain(self.subroutine_symbols.iter()) {
             if name == &symbol.name {
-                return &symbol.kind
+                return Some(&symbol.kind)
             }
         }
 
         println!("NO SYMBOL FOUND (kind_of)");
-        &SymbolKind::NONE
+        None
     }
 
 
-    pub fn type_of(&self, name: &String) -> &SymbolType {
+    pub fn type_of(&self, name: &String) -> Option<&String> {
         for symbol in self.class_symbols.iter().chain(self.subroutine_symbols.iter()) {
             if name == &symbol.name {
-                return &symbol.symType
+                return Some(&symbol.symType)
             }
         }
 
         println!("NO SYMBOL FOUND (type_of)");
-        &SymbolType::NONE
+        None
     }
 
 
-    pub fn index_of(&mut self, name: &String) -> u32 {
+    pub fn index_of(&mut self, name: &String) -> Option<u32> {
         for symbol in self.class_symbols.iter().chain(self.subroutine_symbols.iter()) {
             if name == &symbol.name {
-                return symbol.index
+                return Some(symbol.index)
             }
         }
 
         println!("NO SYMBOL FOUND (index_of)");
-        0
+        None
     }
 }
