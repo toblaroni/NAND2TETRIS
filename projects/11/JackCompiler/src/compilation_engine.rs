@@ -69,9 +69,30 @@ impl CompilationEngine {
         // Don't use check_token. We need to build up the token and then 
         // emit it with either an adapted emit_token() function or a new function 
         // entirely...
-        self.check_token(TokenType::Keyword, Some(&["static", "field"]), false)?;
+        
+        let sym_kind = match self.check_token(TokenType::Keyword, Some(&["static", "field"]), true) {
+            Ok(()) => {
+                self.tokenizer.advance()?;
+                self.emit_token()?;
+                if "static" == self.tokenizer.get_current_token_value() {
+                    SymbolKind::STATIC
+                } else {
+                    SymbolKind::FIELD
+                }
+            }
+            Err(e) => return Err(e)
+        };
+
         self.check_type(false)?;
-        self.check_token(TokenType::Identifier, None, false)?;
+        let sym_type = self.tokenizer.get_current_token_value();
+
+        match self.check_token(TokenType::Identifier, None, true) {
+            Ok(()) => {
+                self.tokenizer.advance()?;
+                
+            }
+            Err(e) => return Err(e)
+        };
 
 
         while self.check_token(TokenType::Symbol, Some(&[","]), true).is_ok() {

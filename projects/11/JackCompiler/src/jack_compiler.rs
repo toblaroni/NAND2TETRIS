@@ -15,7 +15,7 @@ impl JackCompiler {
         let files = Self::handle_input(input_path)?;
 
         Ok(JackCompiler {
-            source_files: files
+            source_files: files,
         })
     }
 
@@ -26,7 +26,6 @@ impl JackCompiler {
             // Initialise a new tokeniser for each source file
             let mut ce = CompilationEngine::new(source_file)?;
             ce.compile_class()?;
-            
         }
 
         Ok(())
