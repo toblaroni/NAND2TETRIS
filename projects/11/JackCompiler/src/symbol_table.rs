@@ -1,5 +1,4 @@
-
-use crate::tokenizer::TokenType;
+use std::fmt;
 
 pub enum SymbolKind {       // This is according to the nand2tetris book definition
     STATIC, 
@@ -113,3 +112,15 @@ impl SymbolTable {
         None
     }
 }
+
+
+impl fmt::Display for SymbolKind {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Self::STATIC => write!(f, "STATIC"),
+            Self::FIELD => write!(f, "FIELD"),
+            Self::ARG => write!(f, "ARG"),
+            Self::VAR => write!(f, "VAR")
+        }
+    }
+} 

@@ -310,8 +310,8 @@ impl Tokenizer {
         &self.file_name
     }
 
-    pub fn get_current_token_value(&self) -> &String {
-        self.current_token().unwrap().get_value()
+    pub fn get_current_token_value(&self) -> String {
+        self.current_token().unwrap().get_value().clone()
     }
 }
 

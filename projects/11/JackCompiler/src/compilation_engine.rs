@@ -66,10 +66,6 @@ impl CompilationEngine {
         self.vm_writer.write_all("<classVarDec>\n".as_bytes())?;
 
 
-        // Don't use check_token. We need to build up the token and then 
-        // emit it with either an adapted emit_token() function or a new function 
-        // entirely...
-        
         let sym_kind = match self.check_token(TokenType::Keyword, Some(&["static", "field"]), true) {
             Ok(()) => {
                 self.tokenizer.advance()?;
@@ -89,7 +85,13 @@ impl CompilationEngine {
         match self.check_token(TokenType::Identifier, None, true) {
             Ok(()) => {
                 self.tokenizer.advance()?;
-                
+                let sym_name = self.tokenizer.get_current_token_value();        
+                self.emit_symbol(
+                    sym_name,
+                    sym_type,
+                    sym_kind,
+                    true
+                )?;
             }
             Err(e) => return Err(e)
         };
@@ -448,6 +450,23 @@ impl CompilationEngine {
             }
         }
 
+        Ok(())
+    }
+
+
+    fn emit_symbol(
+        &mut self,
+        sym_name: String,
+        sym_type: String,
+        sym_kind: SymbolKind,
+        is_defined: bool
+    ) -> Result<(), io::Error> {
+        self.vm_writer.write_all("<identifier>\n".as_bytes())?;
+        self.vm_writer.write_all(format!("<name>{}</name>", sym_name).as_bytes())?;
+        self.vm_writer.write_all(format!("<type>{}</type>", sym_type).as_bytes())?;
+        self.vm_writer.write_all(format!("<kind>{}</kind>", sym_kind).as_bytes())?;
+        self.vm_writer.write_all(format!("<defined>{}</defined>", is_defined).as_bytes())?;
+        self.vm_writer.write_all("</identifier>\n".as_bytes())?;
         Ok(())
     }
 
