@@ -128,52 +128,6 @@ impl CompilationEngine {
         Ok(())
     }
 
-    fn check_symbol(
-        &mut self,
-        sym_type: Option<String>,
-        sym_kind: Option<SymbolKind>,
-        being_defined: bool,
-    ) -> Result<(), io::Error> {
-        /*
-            This will handle identifiers and emitting them.
-            Check for ID, add to symbol table and emit to xml for now...
-        
-            If being_defined then we want to add the symbol table and use the values passed to the function.
-            else we want to find the symbol in the symbol table and use those values.
-        */
-
-        self.tokenizer.advance()?;
-        let ct = self.tokenizer
-                     .current_token()
-                     .ok_or_else(|| self.compilation_error("There is no current token."))?;
-
-        if *ct.get_token_type() != TokenType::Identifier {
-            return Err(
-                self.compilation_error("Expected an identifier.")
-            )
-        }
-
-        let sym_name = self.tokenizer.get_current_token_value();
-
-        let (sym_type, sym_kind) = if being_defined {
-            let sym_type = sym_type.ok_or_else(|| self.compilation_error("Symbol type is missing"))?;
-            let sym_kind = sym_kind.ok_or_else(|| self.compilation_error("Symbol kind is missing"))?;
-            self.symbol_table.define(&sym_name, &sym_type, sym_kind.clone());
-            (sym_type, sym_kind)
-        } else {
-            // We need to get the kind and type from the symbol table
-            let sym_type = self.symbol_table.type_of(&sym_name).to_owned();
-            let sym_kind = self.symbol_table.kind_of(&sym_name).clone();
-            (sym_type, sym_kind)
-        };
-
-        self.emit_symbol(
-            sym_name.clone(),
-            sym_type.clone(),
-            sym_kind.clone(),
-            being_defined,
-        )
-    }
 
     fn compile_subroutine(&mut self) -> Result<(), io::Error> {
         self.vm_writer.write_all("<subroutineDec>\n".as_bytes())?;
@@ -328,7 +282,7 @@ impl CompilationEngine {
             // .subroutineName
             self.tokenizer.advance()?;
             self.emit_token()?;
-            self.check_token(TokenType::Identifier, None, false)?;
+            self.check_symbol(None, None, false)?;
         }
 
         self.check_token(TokenType::Symbol, Some(&["("]), false)?;
@@ -344,7 +298,7 @@ impl CompilationEngine {
         self.vm_writer.write_all("<letStatement>\n".as_bytes())?;
 
         self.check_token(TokenType::Keyword, Some(&["let"]), false)?;
-        self.check_token(TokenType::Identifier, None, false)?;
+        self.check_symbol(None, None, false)?;
 
         if let Ok(_) = self.check_token(TokenType::Symbol, Some(&["["]), true) {
             self.tokenizer.advance()?;
@@ -424,14 +378,14 @@ impl CompilationEngine {
     fn compile_expression_list(&mut self) -> Result<(), io::Error> {
         self.vm_writer.write_all("<expressionList>\n".as_bytes())?;
 
-        if let Ok(_) = self.check_token(TokenType::Symbol, Some(&[")"]), true) {
+        if self.check_token(TokenType::Symbol, Some(&[")"]), true).is_ok() {
             self.vm_writer.write_all("</expressionList>\n".as_bytes())?;
             return Ok(());
         }
 
         self.compile_expression()?;
 
-        while let Ok(_) = self.check_token(TokenType::Symbol, Some(&[","]), true) {
+        while self.check_token(TokenType::Symbol, Some(&[","]), true).is_ok() {
             self.tokenizer.advance()?;
             self.emit_token()?;
             self.compile_expression()?;
@@ -482,8 +436,9 @@ impl CompilationEngine {
     fn handle_term_id(&mut self) -> Result<(), io::Error> {
         // varname | varname [expression] | subroutineCall
         // Consume the id
-        self.tokenizer.advance()?;
-        self.emit_token()?;
+        // self.tokenizer.advance()?;
+        // self.emit_token()?;
+        self.check_symbol(None, None, false)?;
 
         if let Some(t) = self.tokenizer.peek() {
             match t.get_value().as_str() {
@@ -505,7 +460,7 @@ impl CompilationEngine {
                     // .subroutine_name(expressionlist)
                     self.tokenizer.advance()?;
                     self.emit_token()?;
-                    self.check_token(TokenType::Identifier, None, false)?;
+                    self.check_symbol(None, None, false)?;
                     self.check_token(TokenType::Symbol, Some(&["("]), false)?;
                     self.compile_expression_list()?;
                     self.check_token(TokenType::Symbol, Some(&[")"]), false)?;
@@ -558,7 +513,7 @@ impl CompilationEngine {
         self.vm_writer
             .write_all(format!("<kind>{}</kind>\n", sym_kind).as_bytes())?;
         self.vm_writer
-            .write_all(format!("<defined>{}</defined>", being_defined).as_bytes())?;
+            .write_all(format!("<beingDefined>{}</beingDefined>", being_defined).as_bytes())?;
         self.vm_writer.write_all("</identifier>\n".as_bytes())?;
         Ok(())
     }
@@ -635,6 +590,53 @@ impl CompilationEngine {
         }
 
         Ok(())
+    }
+
+    fn check_symbol(
+        &mut self,
+        sym_type: Option<String>,
+        sym_kind: Option<SymbolKind>,
+        being_defined: bool,
+    ) -> Result<(), io::Error> {
+        /*
+            This will handle identifiers and emitting them.
+            Check for ID, add to symbol table and emit to xml for now...
+        
+            If being_defined then we want to add the symbol table and use the values passed to the function.
+            else we want to find the symbol in the symbol table and use those values.
+        */
+
+        self.tokenizer.advance()?;
+        let ct = self.tokenizer
+                     .current_token()
+                     .ok_or_else(|| self.compilation_error("There is no current token."))?;
+
+        if *ct.get_token_type() != TokenType::Identifier {
+            return Err(
+                self.compilation_error("Expected an identifier.")
+            )
+        }
+
+        let sym_name = self.tokenizer.get_current_token_value();
+
+        let (sym_type, sym_kind) = if being_defined {
+            let sym_type = sym_type.ok_or_else(|| self.compilation_error("Symbol type is missing"))?;
+            let sym_kind = sym_kind.ok_or_else(|| self.compilation_error("Symbol kind is missing"))?;
+            self.symbol_table.define(&sym_name, &sym_type, sym_kind.clone());
+            (sym_type, sym_kind)
+        } else {
+            // We need to get the kind and type from the symbol table
+            let sym_type = self.symbol_table.type_of(&sym_name).to_owned();
+            let sym_kind = self.symbol_table.kind_of(&sym_name).clone();
+            (sym_type, sym_kind)
+        };
+
+        self.emit_symbol(
+            sym_name.clone(),
+            sym_type.clone(),
+            sym_kind.clone(),
+            being_defined,
+        )
     }
 
     fn check_type(&mut self, next_token: bool) -> Result<(), io::Error> {
