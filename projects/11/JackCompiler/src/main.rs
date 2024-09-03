@@ -5,8 +5,8 @@ use std::process::exit;
 
 mod compilation_engine;
 mod jack_compiler;
-mod tokenizer;
 mod symbol_table;
+mod tokenizer;
 mod vm_writer;
 
 fn main() -> std::io::Result<()> {
@@ -20,7 +20,7 @@ fn main() -> std::io::Result<()> {
     };
 
     let c = jack_compiler::JackCompiler::new(input)?;
-    
+
     match c.compile() {
         Ok(_) => println!("Analyzing finished successfully"),
         Err(e) => {

@@ -1,17 +1,19 @@
-use std::fmt;
+use std::{fmt, process::exit};
 
-pub enum SymbolKind {       // This is according to the nand2tetris book definition
-    STATIC, 
-    FIELD,
-    ARG,
-    VAR
+pub enum SymbolKind {
+    // This is according to the nand2tetris book definition
+    Static,
+    Field,
+    Arg,
+    Var,
+    None        // Subroutines and Classes
 }
 
 struct Symbol {
     name: String,
     symType: String,
     index: u32,
-    kind: SymbolKind
+    kind: SymbolKind,
 }
 
 pub struct SymbolTable {
@@ -24,9 +26,9 @@ pub struct SymbolTable {
 }
 
 /*
-    We're assuming that the jack code is error free. Therefore we don't need to 
-    keep track of class names or subroutine names...
- */
+   We're assuming that the jack code is error free. Therefore we don't need to
+   keep track of class names or subroutine names...
+*/
 impl SymbolTable {
     pub fn new() -> SymbolTable {
         SymbolTable {
@@ -39,7 +41,6 @@ impl SymbolTable {
         }
     }
 
-
     pub fn start_subroutine(&mut self) {
         // Resets num_arg and num_var and clears subroutine_symbols...
         self.subroutine_symbols.clear();
@@ -47,80 +48,98 @@ impl SymbolTable {
         self.num_var = 0;
     }
 
-
-    pub fn define(&mut self, name: &str, symType: &String, kind: SymbolKind) {
+    pub fn define(&mut self, name: &str, symType: &str, kind: SymbolKind) {
         // Adds a new symbol to the appropriate symbol table
         let (symbols, counter) = match kind {
-            SymbolKind::ARG    => (&mut self.subroutine_symbols, &mut self.num_arg),
-            SymbolKind::VAR    => (&mut self.subroutine_symbols, &mut self.num_var),
-            SymbolKind::FIELD  => (&mut self.class_symbols, &mut self.num_field),
-            SymbolKind::STATIC => (&mut self.class_symbols, &mut self.num_static),
+            SymbolKind::Arg    => (&mut self.subroutine_symbols, &mut self.num_arg),
+            SymbolKind::Var    => (&mut self.subroutine_symbols, &mut self.num_var),
+            SymbolKind::Field  => (&mut self.class_symbols, &mut self.num_field),
+            SymbolKind::Static => (&mut self.class_symbols, &mut self.num_static),
+            _ => return
         };
 
         symbols.push(Symbol {
             name: name.to_string(),
-            symType: symType.clone(),
+            symType: symType.to_string(),
             index: *counter,
-            kind
+            kind,
         });
         *counter += 1;
     }
 
-
     pub fn sym_count(&mut self, kind: SymbolKind) -> u32 {
         match kind {
-            SymbolKind::ARG    => self.num_arg,
-            SymbolKind::VAR    => self.num_var,
-            SymbolKind::FIELD  => self.num_field,
-            SymbolKind::STATIC => self.num_static
+            SymbolKind::Arg => self.num_arg,
+            SymbolKind::Var => self.num_var,
+            SymbolKind::Field => self.num_field,
+            SymbolKind::Static => self.num_static,
+            _ => 0
         }
     }
 
-
-    pub fn kind_of(&self, name: &String) -> Option<&SymbolKind> {
-        for symbol in self.class_symbols.iter().chain(self.subroutine_symbols.iter()) {
+    pub fn kind_of(&self, name: &String) -> &SymbolKind {
+        for symbol in self
+            .class_symbols
+            .iter()
+            .chain(self.subroutine_symbols.iter())
+        {
             if name == &symbol.name {
-                return Some(&symbol.kind)
+                return &symbol.kind;
             }
         }
 
-        println!("NO SYMBOL FOUND (kind_of)");
-        None
+        &SymbolKind::None
     }
 
-
-    pub fn type_of(&self, name: &String) -> Option<&String> {
-        for symbol in self.class_symbols.iter().chain(self.subroutine_symbols.iter()) {
+    pub fn type_of(&self, name: &String) -> &str {
+        for symbol in self
+            .class_symbols
+            .iter()
+            .chain(self.subroutine_symbols.iter())
+        {
             if name == &symbol.name {
-                return Some(&symbol.symType)
+                return &symbol.symType;
             }
         }
 
-        println!("NO SYMBOL FOUND (type_of)");
-        None
+        return "class/subroutine"
     }
-
 
     pub fn index_of(&mut self, name: &String) -> Option<u32> {
-        for symbol in self.class_symbols.iter().chain(self.subroutine_symbols.iter()) {
+        for symbol in self
+            .class_symbols
+            .iter()
+            .chain(self.subroutine_symbols.iter())
+        {
             if name == &symbol.name {
-                return Some(symbol.index)
+                return Some(symbol.index);
             }
         }
 
-        println!("NO SYMBOL FOUND (index_of)");
         None
     }
 }
 
-
 impl fmt::Display for SymbolKind {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Self::STATIC => write!(f, "STATIC"),
-            Self::FIELD => write!(f, "FIELD"),
-            Self::ARG => write!(f, "ARG"),
-            Self::VAR => write!(f, "VAR")
+            Self::Static => write!(f, "Static"),
+            Self::Field => write!(f, "Field"),
+            Self::Arg => write!(f, "Arg"),
+            Self::Var => write!(f, "Var"),
+            Self::None => write!(f, "None")
         }
     }
-} 
+}
+
+impl Clone for SymbolKind {
+    fn clone(&self) -> SymbolKind {
+        match self {
+            Self::Arg => SymbolKind::Arg,
+            Self::Static => SymbolKind::Static,
+            Self::Field => SymbolKind::Field,
+            Self::Var => SymbolKind::Var,
+            Self::None => SymbolKind::None
+        }
+    }
+}
