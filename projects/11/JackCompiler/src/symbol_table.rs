@@ -6,7 +6,7 @@ pub enum SymbolKind {
     Field,
     Arg,
     Var,
-    None        // Subroutines and Classes
+    None, // Subroutines and Classes
 }
 
 struct Symbol {
@@ -22,7 +22,7 @@ pub struct SymbolTable {
     num_static: u32,
     num_field: u32,
     num_arg: u32,
-    num_var: u32
+    num_var: u32,
 }
 
 /*
@@ -37,7 +37,7 @@ impl SymbolTable {
             num_static: 0,
             num_arg: 0,
             num_field: 0,
-            num_var: 0
+            num_var: 0,
         }
     }
 
@@ -51,11 +51,11 @@ impl SymbolTable {
     pub fn define(&mut self, name: &str, symType: &str, kind: SymbolKind) {
         // Adds a new symbol to the appropriate symbol table
         let (symbols, counter) = match kind {
-            SymbolKind::Arg    => (&mut self.subroutine_symbols, &mut self.num_arg),
-            SymbolKind::Var    => (&mut self.subroutine_symbols, &mut self.num_var),
-            SymbolKind::Field  => (&mut self.class_symbols, &mut self.num_field),
+            SymbolKind::Arg => (&mut self.subroutine_symbols, &mut self.num_arg),
+            SymbolKind::Var => (&mut self.subroutine_symbols, &mut self.num_var),
+            SymbolKind::Field => (&mut self.class_symbols, &mut self.num_field),
             SymbolKind::Static => (&mut self.class_symbols, &mut self.num_static),
-            _ => return
+            _ => return,
         };
 
         symbols.push(Symbol {
@@ -73,7 +73,7 @@ impl SymbolTable {
             SymbolKind::Var => self.num_var,
             SymbolKind::Field => self.num_field,
             SymbolKind::Static => self.num_static,
-            _ => 0
+            _ => 0,
         }
     }
 
@@ -102,7 +102,7 @@ impl SymbolTable {
             }
         }
 
-        return "class/subroutine"
+        return "class/subroutine";
     }
 
     pub fn index_of(&mut self, name: &String) -> Option<u32> {
@@ -127,7 +127,7 @@ impl fmt::Display for SymbolKind {
             Self::Field => write!(f, "Field"),
             Self::Arg => write!(f, "Arg"),
             Self::Var => write!(f, "Var"),
-            Self::None => write!(f, "None")
+            Self::None => write!(f, "None"),
         }
     }
 }
@@ -139,7 +139,7 @@ impl Clone for SymbolKind {
             Self::Static => SymbolKind::Static,
             Self::Field => SymbolKind::Field,
             Self::Var => SymbolKind::Var,
-            Self::None => SymbolKind::None
+            Self::None => SymbolKind::None,
         }
     }
 }
