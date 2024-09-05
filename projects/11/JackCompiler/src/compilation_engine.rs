@@ -136,10 +136,17 @@ impl CompilationEngine {
             false,
         )?;
 
+        // If constructor, insert code that allocates enough space for the class (aka)
+        if self.tokenizer.get_current_token_value() == "constructor" {
+            self.vm_writer.write_alloc(
+                self.symbol_table.num_class_vars().to_string()
+            )?;
+        }
+
         // ('void' | type)
         match self.check_token(TokenType::Keyword, Some(&["void"]), true) {
             Ok(_) => {
-                // Consume token and emit
+                // Consume token
                 self.tokenizer.advance()?;
             }
             Err(_) => {
@@ -148,6 +155,8 @@ impl CompilationEngine {
             }
         }
 
+        let ret_type = self.tokenizer.get_current_token_value();
+
         self.check_token(TokenType::Identifier, None, false)?;
         self.check_token(TokenType::Symbol, Some(&["("]), false)?;
 
@@ -155,6 +164,8 @@ impl CompilationEngine {
         self.check_token(TokenType::Symbol, Some(&[")"]), false)?;
 
         self.compile_subroutine_body()?;
+
+        if ret_type == "void"
 
         Ok(())
     }
@@ -201,6 +212,7 @@ impl CompilationEngine {
         }
 
         self.compile_statements()?;
+
 
         self.check_token(TokenType::Symbol, Some(&["}"]), false)?;
         Ok(())

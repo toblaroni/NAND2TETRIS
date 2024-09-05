@@ -53,10 +53,22 @@ impl VMWriter {
         todo!()
     }
 
-    pub fn write_all(&mut self, bytes: &[u8]) -> Result<(), io::Error> {
-        self.writer.write_all(bytes)?;
+    pub fn write_alloc(&mut self, size: String) -> Result<(), io::Error> {
+        self.write_commands(&[
+            &format!("push {}", size),
+            "call Memory.alloc"
+        ])
+    }
+
+    pub fn write_commands(&mut self, commands: &[&str]) -> Result<(), io::Error> {
+
+        for command in commands {
+            self.writer.write_all(command.as_bytes())?;
+        }
+
         Ok(())
     }
+
 
     pub fn close(&mut self) -> Result<(), io::Error> {
         self.writer.flush()?;
