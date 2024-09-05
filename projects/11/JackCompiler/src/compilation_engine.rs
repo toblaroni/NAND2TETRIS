@@ -165,7 +165,9 @@ impl CompilationEngine {
 
         self.compile_subroutine_body()?;
 
-        if ret_type == "void"
+        if ret_type == "void" {
+            
+        }
 
         Ok(())
     }
