@@ -127,10 +127,10 @@ impl SymbolTable {
 impl fmt::Display for SymbolKind {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Self::Static => write!(f, "Static"),
-            Self::Field => write!(f, "Field"),
-            Self::Arg => write!(f, "Arg"),
-            Self::Var => write!(f, "Var"),
+            Self::Static => write!(f, "static"),
+            Self::Field => write!(f, "field"),
+            Self::Arg => write!(f, "arg"),
+            Self::Var => write!(f, "var"),
             Self::None => write!(f, "None"),
         }
     }
@@ -145,5 +145,22 @@ impl Clone for SymbolKind {
             Self::Var => SymbolKind::Var,
             Self::None => SymbolKind::None,
         }
+    }
+}
+
+impl PartialEq for SymbolKind {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (SymbolKind::Arg, SymbolKind::Arg) => true,
+            (SymbolKind::Var, SymbolKind::Var) => true,
+            (SymbolKind::Static, SymbolKind::Static) => true,
+            (SymbolKind::Field, SymbolKind::Field) => true,
+            (SymbolKind::None, SymbolKind::None) => true,
+            _ => false
+        }
+    }
+
+    fn ne(&self, other: &Self) -> bool {
+        !self.eq(other)
     }
 }

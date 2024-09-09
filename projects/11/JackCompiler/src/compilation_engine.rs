@@ -438,7 +438,25 @@ impl CompilationEngine {
     fn handle_term_id(&mut self) -> Result<(), io::Error> {
         // varname | varname [expression] | subroutineCall
         // Consume the id
-        self.check_symbol(None, None, false)?;
+        self.check_token(TokenType::Identifier, None, false)?;
+
+        let sym_name = self.tokenizer.get_current_token_value();
+        let sym_kind = self.symbol_table.kind_of(&sym_name);
+        // If it's a symbol we can push to stack
+        if *sym_kind != SymbolKind::None {
+             let index = self.symbol_table.index_of(&sym_name).unwrap();
+
+            match sym_kind {
+                SymbolKind::Var => self.vm_writer.write_push("local", index)?,
+                SymbolKind::Arg => self.vm_writer.write_push("argument", index)?,
+                SymbolKind::Static => self.vm_writer.write_push("static", index)?,
+                SymbolKind::Field => {
+                    // 1. Point 'this' segment to the current object (pointer 0)
+                    // Then use this <index>
+                }
+            }
+        }
+
 
         if let Some(t) = self.tokenizer.peek() {
             match t.get_value().as_str() {
