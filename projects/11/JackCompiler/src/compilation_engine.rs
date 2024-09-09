@@ -8,17 +8,8 @@ use crate::symbol_table::SymbolTable;
 use crate::tokenizer::{TokenType, Tokenizer};
 use crate::vm_writer::VMWriter;
 
-pub enum VMSegment {
-    Const,
-    Arg,
-    Local,
-    Static,
-    This,
-    That,
-    Pointer,
-    Temp,
-}
 
+/*
 pub enum ArithmeticCommand {
     Add,
     Sub,
@@ -30,6 +21,7 @@ pub enum ArithmeticCommand {
     Or,
     Nor,
 }
+*/
 
 pub struct CompilationEngine {
     tokenizer: Tokenizer,
@@ -51,17 +43,21 @@ impl CompilationEngine {
         tokenizer.advance()?;
 
         let class_name = source_file
-                        .file_stem()
-                        .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidInput, "No file name found in path."))?
-                        .to_str()
-                        .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidInput, "File name is not valid UTF-8."))?
-                        .to_owned();
+            .file_stem()
+            .ok_or_else(|| {
+                io::Error::new(io::ErrorKind::InvalidInput, "No file name found in path.")
+            })?
+            .to_str()
+            .ok_or_else(|| {
+                io::Error::new(io::ErrorKind::InvalidInput, "File name is not valid UTF-8.")
+            })?
+            .to_owned();
 
         Ok(CompilationEngine {
             tokenizer,
             vm_writer,
             symbol_table: SymbolTable::new(),
-            class_name
+            class_name,
         })
     }
 
@@ -136,11 +132,12 @@ impl CompilationEngine {
             false,
         )?;
 
+        self.symbol_table.start_subroutine();
+
         // If constructor, insert code that allocates enough space for the class (aka)
         if self.tokenizer.get_current_token_value() == "constructor" {
-            self.vm_writer.write_alloc(
-                self.symbol_table.num_class_vars().to_string()
-            )?;
+            self.vm_writer
+                .write_alloc(self.symbol_table.num_class_vars().to_string())?;
         }
 
         // ('void' | type)
@@ -158,18 +155,20 @@ impl CompilationEngine {
         let ret_type = self.tokenizer.get_current_token_value();
 
         self.check_token(TokenType::Identifier, None, false)?;
+        let func_name = self.tokenizer.get_current_token_value();
+
         self.check_token(TokenType::Symbol, Some(&["("]), false)?;
 
         self.compile_param_list()?;
         self.check_token(TokenType::Symbol, Some(&[")"]), false)?;
 
-        self.compile_subroutine_body()?;
+        self.compile_subroutine_body(func_name)?;
 
         if ret_type == "void" {
-            
+            self.vm_writer.write_push("constant", 0)?;
         }
 
-        Ok(())
+        self.vm_writer.write_command("return")
     }
 
     fn compile_param_list(&mut self) -> Result<(), io::Error> {
@@ -203,18 +202,25 @@ impl CompilationEngine {
         Ok(())
     }
 
-    fn compile_subroutine_body(&mut self) -> Result<(), io::Error> {
+    fn compile_subroutine_body(&mut self, func_name: String) -> Result<(), io::Error> {
         self.check_token(TokenType::Symbol, Some(&["{"]), false)?;
+
+        let mut num_locals = 0;
 
         while self
             .check_token(TokenType::Keyword, Some(&["var"]), true)
             .is_ok()
         {
-            self.compile_var_dec()?
+            self.compile_var_dec()?;
+            num_locals += 1;
         }
 
-        self.compile_statements()?;
+        self.vm_writer.write_function(
+            &format!("{}.{}", self.class_name, func_name),
+            num_locals
+        )?;
 
+        self.compile_statements()?;
 
         self.check_token(TokenType::Symbol, Some(&["}"]), false)?;
         Ok(())
@@ -268,18 +274,25 @@ impl CompilationEngine {
         // Can just advance and emit since we know 'do' must be next
         self.tokenizer.advance()?;
 
-        self.check_symbol(None, None, false)?;
+        self.check_token(TokenType::Identifier, None, false)?;
+
+        let mut func_name = self.tokenizer.get_current_token_value();
 
         if let Ok(_) = self.check_token(TokenType::Symbol, Some(&["."]), true) {
             // .subroutineName
             self.tokenizer.advance()?;
-            self.check_symbol(None, None, false)?;
+            self.check_token(TokenType::Identifier, None, false)?;
+
+            func_name = format!("{}.{}", func_name, self.tokenizer.get_current_token_value());
         }
 
         self.check_token(TokenType::Symbol, Some(&["("]), false)?;
-        self.compile_expression_list()?;
+        let num_args = self.compile_expression_list()?;
         self.check_token(TokenType::Symbol, Some(&[")"]), false)?;
         self.check_token(TokenType::Symbol, Some(&[";"]), false)?;
+
+        self.vm_writer.write_call(&func_name, num_args)?;
+        self.vm_writer.write_pop("temp", 0)?;
 
         Ok(())
     }
@@ -352,15 +365,16 @@ impl CompilationEngine {
         Ok(())
     }
 
-    fn compile_expression_list(&mut self) -> Result<(), io::Error> {
+    fn compile_expression_list(&mut self) -> Result<u32, io::Error> {
         if self
             .check_token(TokenType::Symbol, Some(&[")"]), true)
             .is_ok()
         {
-            return Ok(());
+            return Ok(0);
         }
 
         self.compile_expression()?;
+        let mut num_args = 1;
 
         while self
             .check_token(TokenType::Symbol, Some(&[","]), true)
@@ -368,9 +382,10 @@ impl CompilationEngine {
         {
             self.tokenizer.advance()?;
             self.compile_expression()?;
+            num_args += 1;
         }
 
-        Ok(())
+        Ok(num_args)
     }
 
     fn compile_expression(&mut self) -> Result<(), io::Error> {
@@ -381,7 +396,17 @@ impl CompilationEngine {
         // (op term)*
         while self.check_token(TokenType::Symbol, Some(ops), true).is_ok() {
             self.tokenizer.advance()?;
+            let op = self.tokenizer.get_current_token_value();
+
             self.compile_term()?;
+
+            match op.as_str() {
+                "+" => self.vm_writer.write_command("add")?,
+                "-" => self.vm_writer.write_command("sub")?,
+                "*" => self.vm_writer.write_command("call Math.multiply 2")?,
+                "/" => self.vm_writer.write_command("call Math.divide 2")?,
+                _ => {}
+            }
         }
 
         Ok(())
@@ -390,7 +415,12 @@ impl CompilationEngine {
     fn compile_term(&mut self) -> Result<(), io::Error> {
         if let Some(t) = self.tokenizer.peek() {
             match t.get_token_type() {
-                TokenType::IntConst => self.check_token(TokenType::IntConst, None, false)?,
+                TokenType::IntConst => {
+                    self.check_token(TokenType::IntConst, None, false)?;
+                    
+                    let index = self.tokenizer.get_current_token_value().parse().unwrap();
+                    self.vm_writer.write_push("constant", index)?
+                },
                 TokenType::StringConst => self.check_token(TokenType::StringConst, None, false)?,
                 TokenType::Keyword => self.check_token(
                     TokenType::Keyword,
