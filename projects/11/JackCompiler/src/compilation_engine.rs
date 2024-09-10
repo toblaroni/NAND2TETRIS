@@ -307,7 +307,7 @@ impl CompilationEngine {
             };
 
             self.vm_writer.write_push(segment, index.unwrap())?;
-            
+            num_args += 1;
         }
 
         self.check_token(TokenType::Symbol, Some(&["("]), false)?;
@@ -517,10 +517,13 @@ impl CompilationEngine {
                 "(" => {
                     // Subroutine call
                     self.tokenizer.advance()?;
+
+                    self.vm_writer.write_push(VMSegment::Pointer, 0)?;
+
                     let num_args = self.compile_expression_list()?;
                     self.check_token(TokenType::Symbol, Some(&[")"]), false)?;
 
-                    self.vm_writer.write_call(&sym_name, num_args)?;
+                    self.vm_writer.write_call(&sym_name, num_args+1)?;
                 }
                 "." => {
                     // Subroutine call
@@ -528,12 +531,32 @@ impl CompilationEngine {
                     self.tokenizer.advance()?;
                     self.check_token(TokenType::Identifier, None, false)?;
 
-                    let label =
-                        format!("{}.{}", sym_name, self.tokenizer.get_current_token_value());
+                    // If the sym_name is in symbol table, we are calling a method of an instance
+                    // Therefore we need to push 'this'
+                    if *self.symbol_table.kind_of(&sym_name) != SymbolKind::None { 
+
+                        let (sym_kind, index) = self.symbol_table.get_symbol(&sym_name);
+
+                        let segment = match sym_kind {
+                            SymbolKind::Arg => VMSegment::Argument,
+                            SymbolKind::Static => VMSegment::Static,
+                            SymbolKind::Var => VMSegment::Local,
+                            SymbolKind::Field => VMSegment::This,   
+                            SymbolKind::None => return Err(self.compilation_error("Symbol not recognised.")),
+                        };
+
+                        self.vm_writer.write_push(segment, index.unwrap())?;
+                    };
+
 
                     self.check_token(TokenType::Symbol, Some(&["("]), false)?;
-                    let num_args = self.compile_expression_list()?;
+                    let mut num_args = self.compile_expression_list()?;
                     self.check_token(TokenType::Symbol, Some(&[")"]), false)?;
+
+                    num_args += 1;
+
+                    let label =
+                        format!("{}.{}", sym_name, self.tokenizer.get_current_token_value());
 
                     self.vm_writer.write_call(&label, num_args)?;
                 }
@@ -682,16 +705,6 @@ impl CompilationEngine {
         }
 
         Err(self.compilation_error("Expected either [int | char | boolean | className]."))
-    }
-
-    fn seg_from_kind(kind: SymbolKind) -> String {
-        match kind {
-            SymbolKind::Arg => String::from("argument"),
-            SymbolKind::Field => String::from("this"),
-            SymbolKind::Static => String::from("static"),
-            SymbolKind::Var => String::from("local"),
-            SymbolKind::None => String::from("")
-        }
     }
 
     // Would be better if we had our own custom error type
