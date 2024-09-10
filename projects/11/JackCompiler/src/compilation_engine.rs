@@ -8,20 +8,17 @@ use crate::symbol_table::SymbolTable;
 use crate::tokenizer::{TokenType, Tokenizer};
 use crate::vm_writer::VMWriter;
 
-
-/*
-pub enum ArithmeticCommand {
-    Add,
-    Sub,
-    Neg,
-    Eq,
-    Gt,
-    Lt,
-    And,
-    Or,
-    Nor,
+pub enum VMSegment {
+    This,
+    That,
+    Local,
+    Argument,
+    Static,
+    Pointer,
+    Constant,
+    Temp
 }
-*/
+
 
 pub struct CompilationEngine {
     tokenizer: Tokenizer,
@@ -165,7 +162,7 @@ impl CompilationEngine {
         self.compile_subroutine_body(func_name)?;
 
         if ret_type == "void" {
-            self.vm_writer.write_push("constant", 0)?;
+            self.vm_writer.write_push(VMSegment::Constant, 0)?;
         }
 
         self.vm_writer.write_command("return")
@@ -277,6 +274,7 @@ impl CompilationEngine {
         self.check_token(TokenType::Identifier, None, false)?;
 
         let mut func_name = self.tokenizer.get_current_token_value();
+        let class_name = func_name.clone();
 
         if let Ok(_) = self.check_token(TokenType::Symbol, Some(&["."]), true) {
             // .subroutineName
@@ -292,14 +290,18 @@ impl CompilationEngine {
         self.check_token(TokenType::Symbol, Some(&[";"]), false)?;
 
         self.vm_writer.write_call(&func_name, num_args)?;
-        self.vm_writer.write_pop("temp", 0)?;
+        self.vm_writer.write_pop(VMSegment::Temp, 0)?;
 
         Ok(())
     }
 
     fn compile_let(&mut self) -> Result<(), io::Error> {
         self.check_token(TokenType::Keyword, Some(&["let"]), false)?;
-        self.check_symbol(None, None, false)?;
+        self.check_token(TokenType::Identifier, None, false)?;
+
+        let sym_name = self.tokenizer.get_current_token_value();
+
+        let (sym_kind, index) = self.symbol_table.get_token(&sym_name);
 
         if let Ok(_) = self.check_token(TokenType::Symbol, Some(&["["]), true) {
             self.tokenizer.advance()?;
@@ -312,6 +314,23 @@ impl CompilationEngine {
         self.check_token(TokenType::Symbol, Some(&["="]), false)?;
         self.compile_expression()?;
         self.check_token(TokenType::Symbol, Some(&[";"]), false)?;
+
+        let segment = match sym_kind {
+            SymbolKind::Arg => VMSegment::Argument,
+            SymbolKind::Static => VMSegment::Static,
+            SymbolKind::Var => VMSegment::Local,
+            SymbolKind::Field => {
+                todo!()
+            },
+            SymbolKind::None => {
+                return Err(
+                    self.compilation_error("Symbol not recognised.")
+                )
+            }
+        };
+
+        // This will pop whatever is on top of the stack after compiling the expression into our variable
+        self.vm_writer.write_pop(segment, index.unwrap())?;
 
         Ok(())
     }
@@ -403,8 +422,13 @@ impl CompilationEngine {
             match op.as_str() {
                 "+" => self.vm_writer.write_command("add")?,
                 "-" => self.vm_writer.write_command("sub")?,
-                "*" => self.vm_writer.write_command("call Math.multiply 2")?,
-                "/" => self.vm_writer.write_command("call Math.divide 2")?,
+                "*" => self.vm_writer.write_call("Math.multiply", 2)?,
+                "/" => self.vm_writer.write_call("Math.divide", 2)?,
+                "&" => self.vm_writer.write_command("and")?,
+                "|" => self.vm_writer.write_command("or")?,
+                "<" => self.vm_writer.write_command("lt")?,
+                ">" => self.vm_writer.write_command("gt")?,
+                "=" => self.vm_writer.write_command("eq")?,
                 _ => {}
             }
         }
@@ -419,7 +443,7 @@ impl CompilationEngine {
                     self.check_token(TokenType::IntConst, None, false)?;
                     
                     let index = self.tokenizer.get_current_token_value().parse().unwrap();
-                    self.vm_writer.write_push("constant", index)?
+                    self.vm_writer.write_push(VMSegment::Constant, index)?
                 },
                 TokenType::StringConst => self.check_token(TokenType::StringConst, None, false)?,
                 TokenType::Keyword => self.check_token(
@@ -447,13 +471,18 @@ impl CompilationEngine {
              let index = self.symbol_table.index_of(&sym_name).unwrap();
 
             match sym_kind {
-                SymbolKind::Var => self.vm_writer.write_push("local", index)?,
-                SymbolKind::Arg => self.vm_writer.write_push("argument", index)?,
-                SymbolKind::Static => self.vm_writer.write_push("static", index)?,
+                SymbolKind::Var => self.vm_writer.write_push(VMSegment::Local, index)?,
+                SymbolKind::Arg => self.vm_writer.write_push(VMSegment::Argument, index)?,
+                SymbolKind::Static => self.vm_writer.write_push(VMSegment::Static, index)?,
                 SymbolKind::Field => {
                     // 1. Point 'this' segment to the current object (pointer 0)
                     // Then use this <index>
+                    self.vm_writer.write_push(VMSegment::Argument, 0)?;
+                    self.vm_writer.write_pop(VMSegment::Pointer, 0)?;
+                    self.vm_writer.write_push(VMSegment::This, index)?;
+
                 }
+                SymbolKind::None => {}      // Subroutine or class
             }
         }
 
@@ -468,17 +497,24 @@ impl CompilationEngine {
                 "(" => {
                     // Subroutine call
                     self.tokenizer.advance()?;
-                    self.compile_expression_list()?;
+                    let num_args = self.compile_expression_list()?;
                     self.check_token(TokenType::Symbol, Some(&[")"]), false)?;
+
+                    self.vm_writer.write_call(&sym_name, num_args)?;
                 }
                 "." => {
                     // Subroutine call
                     // .subroutine_name(expressionlist)
                     self.tokenizer.advance()?;
-                    self.check_symbol(None, None, false)?;
+                    self.check_token(TokenType::Identifier, None, false)?;
+
+                    let label = format!("{}.{}", sym_name, self.tokenizer.get_current_token_value());
+
                     self.check_token(TokenType::Symbol, Some(&["("]), false)?;
-                    self.compile_expression_list()?;
+                    let num_args = self.compile_expression_list()?;
                     self.check_token(TokenType::Symbol, Some(&[")"]), false)?;
+
+                    self.vm_writer.write_call(&label, num_args)?;
                 }
                 _ => {}
             }

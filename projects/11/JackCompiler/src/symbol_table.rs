@@ -67,7 +67,7 @@ impl SymbolTable {
         *counter += 1;
     }
 
-    pub fn sym_count(&mut self, kind: SymbolKind) -> u32 {
+    pub fn sym_count(&self, kind: SymbolKind) -> u32 {
         match kind {
             SymbolKind::Arg => self.num_arg,
             SymbolKind::Var => self.num_var,
@@ -109,7 +109,7 @@ impl SymbolTable {
         return "class/subroutine";
     }
 
-    pub fn index_of(&mut self, name: &String) -> Option<u32> {
+    pub fn index_of(&self, name: &String) -> Option<u32> {
         for symbol in self
             .class_symbols
             .iter()
@@ -121,6 +121,10 @@ impl SymbolTable {
         }
 
         None
+    }
+
+    pub fn get_token(&self, name: &String) -> (SymbolKind, Option<u32>) {
+        (self.kind_of(name).clone(), self.index_of(name))
     }
 }
 

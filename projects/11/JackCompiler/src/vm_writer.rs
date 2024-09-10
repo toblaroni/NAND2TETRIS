@@ -3,6 +3,8 @@ use std::{
     io::{self, BufWriter, Write},
 };
 
+use crate::compilation_engine::VMSegment;
+
 
 pub struct VMWriter {
     writer: BufWriter<File>,
@@ -17,21 +19,45 @@ impl VMWriter {
 
     pub fn write_push(
         &mut self,
-        segment: &str,
+        segment: VMSegment,
         index: u32,
     ) -> Result<(), io::Error> {
+
+        let seg = match segment {
+            VMSegment::Argument => "argument",
+            VMSegment::Local => "local",
+            VMSegment::Pointer => "pointer",
+            VMSegment::Static => "static",
+            VMSegment::That => "that",
+            VMSegment::This => "this",
+            VMSegment::Constant => "constant",
+            VMSegment::Temp => "temp"
+        };
+
         self.write_command(
-            &format!("push {} {}", segment, index)
+            &format!("push {} {}", seg, index)
         )
     }
 
     pub fn write_pop(
         &mut self,
-        segment: &str,
+        segment: VMSegment,
         index: u32,
     ) -> Result<(), io::Error> {
+
+        let seg = match segment {
+            VMSegment::Argument => "argument",
+            VMSegment::Local => "local",
+            VMSegment::Pointer => "pointer",
+            VMSegment::Static => "static",
+            VMSegment::That => "that",
+            VMSegment::This => "this",
+            VMSegment::Constant => "constant",
+            VMSegment::Temp => "temp"
+        };
+
         self.write_command(
-            &format!("pop {} {}", segment, index)
+            &format!("pop {} {}", seg, index)
         )
     }
 
