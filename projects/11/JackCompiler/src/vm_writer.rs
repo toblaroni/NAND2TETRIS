@@ -5,7 +5,6 @@ use std::{
 
 use crate::compilation_engine::VMSegment;
 
-
 pub struct VMWriter {
     writer: BufWriter<File>,
 }
@@ -17,12 +16,7 @@ impl VMWriter {
         VMWriter { writer }
     }
 
-    pub fn write_push(
-        &mut self,
-        segment: VMSegment,
-        index: u32,
-    ) -> Result<(), io::Error> {
-
+    pub fn write_push(&mut self, segment: VMSegment, index: u32) -> Result<(), io::Error> {
         let seg = match segment {
             VMSegment::Argument => "argument",
             VMSegment::Local => "local",
@@ -31,20 +25,13 @@ impl VMWriter {
             VMSegment::That => "that",
             VMSegment::This => "this",
             VMSegment::Constant => "constant",
-            VMSegment::Temp => "temp"
+            VMSegment::Temp => "temp",
         };
 
-        self.write_command(
-            &format!("push {} {}", seg, index)
-        )
+        self.write_command(&format!("push {} {}", seg, index))
     }
 
-    pub fn write_pop(
-        &mut self,
-        segment: VMSegment,
-        index: u32,
-    ) -> Result<(), io::Error> {
-
+    pub fn write_pop(&mut self, segment: VMSegment, index: u32) -> Result<(), io::Error> {
         let seg = match segment {
             VMSegment::Argument => "argument",
             VMSegment::Local => "local",
@@ -53,12 +40,10 @@ impl VMWriter {
             VMSegment::That => "that",
             VMSegment::This => "this",
             VMSegment::Constant => "constant",
-            VMSegment::Temp => "temp"
+            VMSegment::Temp => "temp",
         };
 
-        self.write_command(
-            &format!("pop {} {}", seg, index)
-        )
+        self.write_command(&format!("pop {} {}", seg, index))
     }
 
     pub fn write_label(&mut self, label: &str) -> Result<(), io::Error> {
@@ -78,9 +63,7 @@ impl VMWriter {
     }
 
     pub fn write_function(&mut self, label: &str, num_locals: u32) -> Result<(), io::Error> {
-        self.write_command(
-            &format!("function {} {}", label, num_locals)
-        )
+        self.write_command(&format!("function {} {}", label, num_locals))
     }
 
     pub fn write_alloc(&mut self, size: String) -> Result<(), io::Error> {

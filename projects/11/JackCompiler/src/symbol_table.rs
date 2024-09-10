@@ -123,7 +123,7 @@ impl SymbolTable {
         None
     }
 
-    pub fn get_token(&self, name: &String) -> (SymbolKind, Option<u32>) {
+    pub fn get_symbol(&self, name: &String) -> (SymbolKind, Option<u32>) {
         (self.kind_of(name).clone(), self.index_of(name))
     }
 }
@@ -160,7 +160,7 @@ impl PartialEq for SymbolKind {
             (SymbolKind::Static, SymbolKind::Static) => true,
             (SymbolKind::Field, SymbolKind::Field) => true,
             (SymbolKind::None, SymbolKind::None) => true,
-            _ => false
+            _ => false,
         }
     }
 

@@ -16,9 +16,8 @@ pub enum VMSegment {
     Static,
     Pointer,
     Constant,
-    Temp
+    Temp,
 }
-
 
 pub struct CompilationEngine {
     tokenizer: Tokenizer,
@@ -91,17 +90,13 @@ impl CompilationEngine {
     }
 
     fn compile_class_var_dec(&mut self) -> Result<(), io::Error> {
-        let sym_kind = match self.check_token(TokenType::Keyword, Some(&["static", "field"]), true)
-        {
-            Ok(()) => {
-                self.tokenizer.advance()?;
-                if "static" == self.tokenizer.get_current_token_value() {
-                    SymbolKind::Static
-                } else {
-                    SymbolKind::Field
-                }
-            }
-            Err(e) => return Err(e),
+
+        self.check_token(TokenType::Keyword, Some(&["static", "field"]), false)?;
+        
+        let sym_kind = if "static" == self.tokenizer.get_current_token_value() {
+            SymbolKind::Static
+        } else {
+            SymbolKind::Field
         };
 
         self.check_type(false)?;
@@ -132,9 +127,15 @@ impl CompilationEngine {
         self.symbol_table.start_subroutine();
 
         // If constructor, insert code that allocates enough space for the class (aka)
-        if self.tokenizer.get_current_token_value() == "constructor" {
+        let subroutine_type = self.tokenizer.get_current_token_value();
+
+        if subroutine_type == "constructor" {
             self.vm_writer
                 .write_alloc(self.symbol_table.num_class_vars().to_string())?;
+            self.vm_writer.write_pop(VMSegment::Pointer, 0)?;
+        } else if subroutine_type == "method" {
+            // Add this as the first arg
+            self.symbol_table.define("this", &self.class_name, SymbolKind::Arg);
         }
 
         // ('void' | type)
@@ -146,6 +147,7 @@ impl CompilationEngine {
             Err(_) => {
                 // Consumes and emits a type if there's one
                 self.check_type(false)?;
+
             }
         }
 
@@ -163,6 +165,8 @@ impl CompilationEngine {
 
         if ret_type == "void" {
             self.vm_writer.write_push(VMSegment::Constant, 0)?;
+        } else if subroutine_type == "constructor" {
+            self.vm_writer.write_push(VMSegment::Pointer, 0)?;  // Return this
         }
 
         self.vm_writer.write_command("return")
@@ -202,20 +206,17 @@ impl CompilationEngine {
     fn compile_subroutine_body(&mut self, func_name: String) -> Result<(), io::Error> {
         self.check_token(TokenType::Symbol, Some(&["{"]), false)?;
 
-        let mut num_locals = 0;
 
         while self
             .check_token(TokenType::Keyword, Some(&["var"]), true)
             .is_ok()
         {
             self.compile_var_dec()?;
-            num_locals += 1;
         }
 
-        self.vm_writer.write_function(
-            &format!("{}.{}", self.class_name, func_name),
-            num_locals
-        )?;
+        let num_locals = self.symbol_table.sym_count(SymbolKind::Var);
+        self.vm_writer
+            .write_function(&format!("{}.{}", self.class_name, func_name), num_locals)?;
 
         self.compile_statements()?;
 
@@ -284,10 +285,36 @@ impl CompilationEngine {
             func_name = format!("{}.{}", func_name, self.tokenizer.get_current_token_value());
         }
 
+        // Are we calling a method? If so push 'this' 
+        // Either we have <subroutine_name>() or <instance>.<subroutine_name>()
+        let mut num_args = 0;
+        if class_name == func_name {
+            // <subroutine_name>()  <- This tells us we're just calling a method in the current class
+            self.vm_writer.write_push(VMSegment::Pointer, 0)?;
+            num_args += 1
+        } else if *self.symbol_table.kind_of(&class_name) != SymbolKind::None { 
+            // <instance>.<subroutine_name>()
+            // In this case 'this' is wherever the variable points to...
+            let (sym_kind, index) = self.symbol_table.get_symbol(&class_name);
+
+            let segment = match sym_kind {
+                SymbolKind::Arg => VMSegment::Argument,
+                SymbolKind::Static => VMSegment::Static,
+                SymbolKind::Var => VMSegment::Local,
+                // If we're in a constructor, 'this' will be whatever has just been allocated...
+                SymbolKind::Field => VMSegment::This,   
+                SymbolKind::None => return Err(self.compilation_error("Symbol not recognised.")),
+            };
+
+            self.vm_writer.write_push(segment, index.unwrap())?;
+            
+        }
+
         self.check_token(TokenType::Symbol, Some(&["("]), false)?;
-        let num_args = self.compile_expression_list()?;
+        num_args += self.compile_expression_list()?;
         self.check_token(TokenType::Symbol, Some(&[")"]), false)?;
         self.check_token(TokenType::Symbol, Some(&[";"]), false)?;
+
 
         self.vm_writer.write_call(&func_name, num_args)?;
         self.vm_writer.write_pop(VMSegment::Temp, 0)?;
@@ -301,7 +328,7 @@ impl CompilationEngine {
 
         let sym_name = self.tokenizer.get_current_token_value();
 
-        let (sym_kind, index) = self.symbol_table.get_token(&sym_name);
+        let (sym_kind, index) = self.symbol_table.get_symbol(&sym_name);
 
         if let Ok(_) = self.check_token(TokenType::Symbol, Some(&["["]), true) {
             self.tokenizer.advance()?;
@@ -319,14 +346,9 @@ impl CompilationEngine {
             SymbolKind::Arg => VMSegment::Argument,
             SymbolKind::Static => VMSegment::Static,
             SymbolKind::Var => VMSegment::Local,
-            SymbolKind::Field => {
-                todo!()
-            },
-            SymbolKind::None => {
-                return Err(
-                    self.compilation_error("Symbol not recognised.")
-                )
-            }
+            // If we're in a constructor, 'this' will be whatever has just been allocated...
+            SymbolKind::Field => VMSegment::This,   
+            SymbolKind::None => return Err(self.compilation_error("Symbol not recognised.")),
         };
 
         // This will pop whatever is on top of the stack after compiling the expression into our variable
@@ -441,10 +463,10 @@ impl CompilationEngine {
             match t.get_token_type() {
                 TokenType::IntConst => {
                     self.check_token(TokenType::IntConst, None, false)?;
-                    
+
                     let index = self.tokenizer.get_current_token_value().parse().unwrap();
                     self.vm_writer.write_push(VMSegment::Constant, index)?
-                },
+                }
                 TokenType::StringConst => self.check_token(TokenType::StringConst, None, false)?,
                 TokenType::Keyword => self.check_token(
                     TokenType::Keyword,
@@ -468,7 +490,7 @@ impl CompilationEngine {
         let sym_kind = self.symbol_table.kind_of(&sym_name);
         // If it's a symbol we can push to stack
         if *sym_kind != SymbolKind::None {
-             let index = self.symbol_table.index_of(&sym_name).unwrap();
+            let index = self.symbol_table.index_of(&sym_name).unwrap();
 
             match sym_kind {
                 SymbolKind::Var => self.vm_writer.write_push(VMSegment::Local, index)?,
@@ -480,12 +502,10 @@ impl CompilationEngine {
                     self.vm_writer.write_push(VMSegment::Argument, 0)?;
                     self.vm_writer.write_pop(VMSegment::Pointer, 0)?;
                     self.vm_writer.write_push(VMSegment::This, index)?;
-
                 }
-                SymbolKind::None => {}      // Subroutine or class
+                SymbolKind::None => {} // Subroutine or class
             }
         }
-
 
         if let Some(t) = self.tokenizer.peek() {
             match t.get_value().as_str() {
@@ -508,7 +528,8 @@ impl CompilationEngine {
                     self.tokenizer.advance()?;
                     self.check_token(TokenType::Identifier, None, false)?;
 
-                    let label = format!("{}.{}", sym_name, self.tokenizer.get_current_token_value());
+                    let label =
+                        format!("{}.{}", sym_name, self.tokenizer.get_current_token_value());
 
                     self.check_token(TokenType::Symbol, Some(&["("]), false)?;
                     let num_args = self.compile_expression_list()?;
@@ -661,6 +682,16 @@ impl CompilationEngine {
         }
 
         Err(self.compilation_error("Expected either [int | char | boolean | className]."))
+    }
+
+    fn seg_from_kind(kind: SymbolKind) -> String {
+        match kind {
+            SymbolKind::Arg => String::from("argument"),
+            SymbolKind::Field => String::from("this"),
+            SymbolKind::Static => String::from("static"),
+            SymbolKind::Var => String::from("local"),
+            SymbolKind::None => String::from("")
+        }
     }
 
     // Would be better if we had our own custom error type
