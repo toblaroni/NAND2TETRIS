@@ -24,6 +24,8 @@ pub struct CompilationEngine {
     vm_writer: VMWriter,
     symbol_table: SymbolTable,
     class_name: String,
+    if_count: u32,
+    while_count: u32,
 }
 
 impl CompilationEngine {
@@ -54,6 +56,8 @@ impl CompilationEngine {
             vm_writer,
             symbol_table: SymbolTable::new(),
             class_name,
+            if_count: 0,
+            while_count: 0,
         })
     }
 
@@ -90,9 +94,8 @@ impl CompilationEngine {
     }
 
     fn compile_class_var_dec(&mut self) -> Result<(), io::Error> {
-
         self.check_token(TokenType::Keyword, Some(&["static", "field"]), false)?;
-        
+
         let sym_kind = if "static" == self.tokenizer.get_current_token_value() {
             SymbolKind::Static
         } else {
@@ -135,7 +138,8 @@ impl CompilationEngine {
             self.vm_writer.write_pop(VMSegment::Pointer, 0)?;
         } else if subroutine_type == "method" {
             // Add this as the first arg
-            self.symbol_table.define("this", &self.class_name, SymbolKind::Arg);
+            self.symbol_table
+                .define("this", &self.class_name, SymbolKind::Arg);
         }
 
         // ('void' | type)
@@ -147,7 +151,6 @@ impl CompilationEngine {
             Err(_) => {
                 // Consumes and emits a type if there's one
                 self.check_type(false)?;
-
             }
         }
 
@@ -166,7 +169,7 @@ impl CompilationEngine {
         if ret_type == "void" {
             self.vm_writer.write_push(VMSegment::Constant, 0)?;
         } else if subroutine_type == "constructor" {
-            self.vm_writer.write_push(VMSegment::Pointer, 0)?;  // Return this
+            self.vm_writer.write_push(VMSegment::Pointer, 0)?; // Return this
         }
 
         self.vm_writer.write_command("return")
@@ -205,7 +208,6 @@ impl CompilationEngine {
 
     fn compile_subroutine_body(&mut self, func_name: String) -> Result<(), io::Error> {
         self.check_token(TokenType::Symbol, Some(&["{"]), false)?;
-
 
         while self
             .check_token(TokenType::Keyword, Some(&["var"]), true)
@@ -277,7 +279,7 @@ impl CompilationEngine {
         let mut func_name = self.tokenizer.get_current_token_value();
         let class_name = func_name.clone();
 
-        if let Ok(_) = self.check_token(TokenType::Symbol, Some(&["."]), true) {
+        if self.check_token(TokenType::Symbol, Some(&["."]), true).is_ok() {
             // .subroutineName
             self.tokenizer.advance()?;
             self.check_token(TokenType::Identifier, None, false)?;
@@ -285,14 +287,15 @@ impl CompilationEngine {
             func_name = format!("{}.{}", func_name, self.tokenizer.get_current_token_value());
         }
 
-        // Are we calling a method? If so push 'this' 
+        // Are we calling a method? If so push 'this'
         // Either we have <subroutine_name>() or <instance>.<subroutine_name>()
         let mut num_args = 0;
         if class_name == func_name {
             // <subroutine_name>()  <- This tells us we're just calling a method in the current class
             self.vm_writer.write_push(VMSegment::Pointer, 0)?;
-            num_args += 1
-        } else if *self.symbol_table.kind_of(&class_name) != SymbolKind::None { 
+            num_args += 1;
+            // println!("INCREMENTING FOR CLASS_NAME == FUNC_NAME -> {} == {}", class_name, func_name);
+        } else if *self.symbol_table.kind_of(&class_name) != SymbolKind::None {
             // <instance>.<subroutine_name>()
             // In this case 'this' is wherever the variable points to...
             let (sym_kind, index) = self.symbol_table.get_symbol(&class_name);
@@ -302,11 +305,12 @@ impl CompilationEngine {
                 SymbolKind::Static => VMSegment::Static,
                 SymbolKind::Var => VMSegment::Local,
                 // If we're in a constructor, 'this' will be whatever has just been allocated...
-                SymbolKind::Field => VMSegment::This,   
+                SymbolKind::Field => VMSegment::This,
                 SymbolKind::None => return Err(self.compilation_error("Symbol not recognised.")),
             };
 
             self.vm_writer.write_push(segment, index.unwrap())?;
+            // println!("INCREMENTING NUM_ARGS FOR <INSTANCE>.<SUBROUTINE_NAME>() -> {}", class_name);
             num_args += 1;
         }
 
@@ -314,7 +318,6 @@ impl CompilationEngine {
         num_args += self.compile_expression_list()?;
         self.check_token(TokenType::Symbol, Some(&[")"]), false)?;
         self.check_token(TokenType::Symbol, Some(&[";"]), false)?;
-
 
         self.vm_writer.write_call(&func_name, num_args)?;
         self.vm_writer.write_pop(VMSegment::Temp, 0)?;
@@ -330,7 +333,7 @@ impl CompilationEngine {
 
         let (sym_kind, index) = self.symbol_table.get_symbol(&sym_name);
 
-        if let Ok(_) = self.check_token(TokenType::Symbol, Some(&["["]), true) {
+        if self.check_token(TokenType::Symbol, Some(&["["]), true).is_ok() {
             self.tokenizer.advance()?;
 
             self.compile_expression()?;
@@ -347,7 +350,7 @@ impl CompilationEngine {
             SymbolKind::Static => VMSegment::Static,
             SymbolKind::Var => VMSegment::Local,
             // If we're in a constructor, 'this' will be whatever has just been allocated...
-            SymbolKind::Field => VMSegment::This,   
+            SymbolKind::Field => VMSegment::This,
             SymbolKind::None => return Err(self.compilation_error("Symbol not recognised.")),
         };
 
@@ -358,15 +361,27 @@ impl CompilationEngine {
     }
 
     fn compile_while(&mut self) -> Result<(), io::Error> {
+        let while_start_label = format!("WHILE_START_{}", self.while_count);
+        let while_end_label = format!("WHILE_END_{}", self.while_count);
+        self.while_count += 1;
+
+        self.vm_writer.write_label(&while_start_label)?;
+
         self.check_token(TokenType::Keyword, Some(&["while"]), false)?;
 
         self.check_token(TokenType::Symbol, Some(&["("]), false)?;
         self.compile_expression()?;
         self.check_token(TokenType::Symbol, Some(&[")"]), false)?;
 
+        self.vm_writer.write_command("not")?;
+        self.vm_writer.write_if(&while_end_label)?;
+
         self.check_token(TokenType::Symbol, Some(&["{"]), false)?;
         self.compile_statements()?;
         self.check_token(TokenType::Symbol, Some(&["}"]), false)?;
+
+        self.vm_writer.write_goto(&while_start_label)?;
+        self.vm_writer.write_label(&while_end_label)?;
 
         Ok(())
     }
@@ -392,16 +407,31 @@ impl CompilationEngine {
         self.compile_expression()?;
         self.check_token(TokenType::Symbol, Some(&[")"]), false)?;
 
+        let if_false_label = format!("IF_FALSE_{}", self.if_count);
+        let if_end_label = format!("IF_END_{}", self.if_count);
+        self.if_count += 1;
+
+        // Negate whatever is top of stack
+        self.vm_writer.write_command("not")?;
+        self.vm_writer.write_if(&if_false_label)?;
+
         self.check_token(TokenType::Symbol, Some(&["{"]), false)?;
         self.compile_statements()?;
         self.check_token(TokenType::Symbol, Some(&["}"]), false)?;
 
-        if let Ok(_) = self.check_token(TokenType::Keyword, Some(&["else"]), true) {
+        self.vm_writer.write_goto(&if_end_label)?;
+
+        if self.check_token(TokenType::Keyword, Some(&["else"]), true).is_ok() {
+            // If false
+            self.vm_writer.write_label(&if_false_label)?;
+
             self.tokenizer.advance()?;
             self.check_token(TokenType::Symbol, Some(&["{"]), false)?;
             self.compile_statements()?;
             self.check_token(TokenType::Symbol, Some(&["}"]), false)?;
         }
+
+        self.vm_writer.write_label(&if_end_label)?;
 
         Ok(())
     }
@@ -468,11 +498,23 @@ impl CompilationEngine {
                     self.vm_writer.write_push(VMSegment::Constant, index)?
                 }
                 TokenType::StringConst => self.check_token(TokenType::StringConst, None, false)?,
-                TokenType::Keyword => self.check_token(
-                    TokenType::Keyword,
-                    Some(&["true", "false", "null", "this"]),
-                    false,
-                )?,
+                TokenType::Keyword => {
+                    self.check_token(
+                        TokenType::Keyword,
+                        Some(&["true", "false", "null", "this"]),
+                        false,
+                    )?;
+
+                    match self.tokenizer.get_current_token_value().as_str() {
+                        "true" => {
+                            self.vm_writer.write_push(VMSegment::Constant, 1)?;
+                            self.vm_writer.write_command("neg")?;
+                        }
+                        "null" | "false" => self.vm_writer.write_push(VMSegment::Constant, 0)?,
+                        "this" => self.vm_writer.write_push(VMSegment::Pointer, 0)?,
+                        _ => {} // Error would've been handled in check_token
+                    }
+                }
                 TokenType::Identifier => self.handle_term_id()?,
                 TokenType::Symbol => self.handle_term_symbol()?,
             }
@@ -523,40 +565,40 @@ impl CompilationEngine {
                     let num_args = self.compile_expression_list()?;
                     self.check_token(TokenType::Symbol, Some(&[")"]), false)?;
 
-                    self.vm_writer.write_call(&sym_name, num_args+1)?;
+                    self.vm_writer.write_call(&sym_name, num_args + 1)?;
                 }
                 "." => {
                     // Subroutine call
                     // .subroutine_name(expressionlist)
                     self.tokenizer.advance()?;
                     self.check_token(TokenType::Identifier, None, false)?;
+                    let subroutine_name = self.tokenizer.get_current_token_value();
 
                     // If the sym_name is in symbol table, we are calling a method of an instance
                     // Therefore we need to push 'this'
-                    if *self.symbol_table.kind_of(&sym_name) != SymbolKind::None { 
-
+                    let mut num_args = 0;
+                    if *self.symbol_table.kind_of(&sym_name) != SymbolKind::None {
                         let (sym_kind, index) = self.symbol_table.get_symbol(&sym_name);
 
                         let segment = match sym_kind {
                             SymbolKind::Arg => VMSegment::Argument,
                             SymbolKind::Static => VMSegment::Static,
                             SymbolKind::Var => VMSegment::Local,
-                            SymbolKind::Field => VMSegment::This,   
-                            SymbolKind::None => return Err(self.compilation_error("Symbol not recognised.")),
+                            SymbolKind::Field => VMSegment::This,
+                            SymbolKind::None => {
+                                return Err(self.compilation_error("Symbol not recognised."))
+                            }
                         };
 
                         self.vm_writer.write_push(segment, index.unwrap())?;
+                        num_args += 1;
                     };
 
-
                     self.check_token(TokenType::Symbol, Some(&["("]), false)?;
-                    let mut num_args = self.compile_expression_list()?;
+                    num_args += self.compile_expression_list()?;
                     self.check_token(TokenType::Symbol, Some(&[")"]), false)?;
 
-                    num_args += 1;
-
-                    let label =
-                        format!("{}.{}", sym_name, self.tokenizer.get_current_token_value());
+                    let label = format!("{}.{}", sym_name, subroutine_name);
 
                     self.vm_writer.write_call(&label, num_args)?;
                 }
@@ -574,10 +616,17 @@ impl CompilationEngine {
                     self.compile_expression()?;
                     self.check_token(TokenType::Symbol, Some(&[")"]), false)?;
                 }
-                "-" | "~" => {
+                "~" => {
                     // Unary-op
                     self.tokenizer.advance()?;
                     self.compile_term()?;
+                    self.vm_writer.write_command("not")?;
+                }
+                "-" => {
+                    // Unary-op
+                    self.tokenizer.advance()?;
+                    self.compile_term()?;
+                    self.vm_writer.write_command("neg")?;
                 }
                 _ => {
                     return Err(self.compilation_error(&format!(

@@ -1,4 +1,4 @@
-use std::{fmt, process::exit};
+use std::fmt;
 
 pub enum SymbolKind {
     // This is according to the nand2tetris book definition
@@ -106,7 +106,7 @@ impl SymbolTable {
             }
         }
 
-        return "class/subroutine";
+        "class/subroutine"
     }
 
     pub fn index_of(&self, name: &String) -> Option<u32> {
@@ -154,17 +154,14 @@ impl Clone for SymbolKind {
 
 impl PartialEq for SymbolKind {
     fn eq(&self, other: &Self) -> bool {
-        match (self, other) {
-            (SymbolKind::Arg, SymbolKind::Arg) => true,
-            (SymbolKind::Var, SymbolKind::Var) => true,
-            (SymbolKind::Static, SymbolKind::Static) => true,
-            (SymbolKind::Field, SymbolKind::Field) => true,
-            (SymbolKind::None, SymbolKind::None) => true,
-            _ => false,
-        }
+        matches!(
+            (self, other),
+            (SymbolKind::Arg, SymbolKind::Arg)
+                | (SymbolKind::Var, SymbolKind::Var)
+                | (SymbolKind::Static, SymbolKind::Static)
+                | (SymbolKind::Field, SymbolKind::Field)
+                | (SymbolKind::None, SymbolKind::None)
+        )
     }
 
-    fn ne(&self, other: &Self) -> bool {
-        !self.eq(other)
-    }
 }

@@ -47,15 +47,15 @@ impl VMWriter {
     }
 
     pub fn write_label(&mut self, label: &str) -> Result<(), io::Error> {
-        todo!()
+        self.write_command(&format!("label {}", label))
     }
 
     pub fn write_goto(&mut self, label: &str) -> Result<(), io::Error> {
-        todo!()
+        self.write_command(&format!("goto {}", label))
     }
 
     pub fn write_if(&mut self, label: &str) -> Result<(), io::Error> {
-        todo!()
+        self.write_command(&format!("if-goto {}", label))
     }
 
     pub fn write_call(&mut self, label: &str, num_args: u32) -> Result<(), io::Error> {

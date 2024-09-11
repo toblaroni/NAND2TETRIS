@@ -63,7 +63,7 @@ pub struct Tokenizer {
 
 impl Tokenizer {
     pub fn new(source_file: &PathBuf) -> Result<Tokenizer, io::Error> {
-        let file = File::open(&source_file)?;
+        let file = File::open(source_file)?;
         let reader = BufReader::new(file);
 
         let file_name = source_file
