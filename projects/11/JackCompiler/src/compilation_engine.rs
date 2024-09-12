@@ -8,6 +8,7 @@ use crate::symbol_table::SymbolTable;
 use crate::tokenizer::{TokenType, Tokenizer};
 use crate::vm_writer::VMWriter;
 
+#[derive(PartialEq, Eq)]
 pub enum VMSegment {
     This,
     That,
@@ -210,7 +211,6 @@ impl CompilationEngine {
             .write_function(&format!("{}.{}", self.class_name, func_name), num_locals)?;
 
         if subroutine_type == "constructor" {
-            println!("FILE: {}, CLASS VARS: {}", self.class_name, self.symbol_table.num_class_vars());
             self.vm_writer
                 .write_alloc(self.symbol_table.num_class_vars())?;
             self.vm_writer.write_pop(VMSegment::Pointer, 0)?;
@@ -351,15 +351,34 @@ impl CompilationEngine {
 
         let sym_name = self.tokenizer.get_current_token_value();
 
-        let (sym_kind, index) = self.symbol_table.get_symbol(&sym_name);
+        let (sym_kind, mut index) = self.symbol_table.get_symbol(&sym_name);
+
+        let mut segment = match sym_kind {
+            SymbolKind::Arg => VMSegment::Argument,
+            SymbolKind::Static => VMSegment::Static,
+            SymbolKind::Var => VMSegment::Local,
+            // If we're in a constructor, 'this' will be whatever has just been allocated...
+            SymbolKind::Field => VMSegment::This,
+            SymbolKind::None => return Err(self.compilation_error("Symbol not recognised.")),
+        };
 
         if self
             .check_token(TokenType::Symbol, Some(&["["]), true)
             .is_ok()
         {
+            // ARRAY
             self.tokenizer.advance()?;
 
+            // Push the base of the current symbol
+            self.vm_writer.write_push(segment.clone(), index.unwrap())?; 
+
             self.compile_expression()?;
+
+            // Add the result of the expression to the address of the symbol
+            self.vm_writer.write_command("add")?;       // This leaves the address of the indexed element on the stack
+
+            segment = VMSegment::That;
+            index = Some(0);
 
             self.check_token(TokenType::Symbol, Some(&["]"]), false)?;
         }
@@ -368,14 +387,13 @@ impl CompilationEngine {
         self.compile_expression()?;
         self.check_token(TokenType::Symbol, Some(&[";"]), false)?;
 
-        let segment = match sym_kind {
-            SymbolKind::Arg => VMSegment::Argument,
-            SymbolKind::Static => VMSegment::Static,
-            SymbolKind::Var => VMSegment::Local,
-            // If we're in a constructor, 'this' will be whatever has just been allocated...
-            SymbolKind::Field => VMSegment::This,
-            SymbolKind::None => return Err(self.compilation_error("Symbol not recognised.")),
-        };
+        if segment == VMSegment::That {
+            // Pop the result to temp 0
+            self.vm_writer.write_pop(VMSegment::Temp, 0)?;
+            // Pop the address of var[index] to that
+            self.vm_writer.write_pop(VMSegment::Pointer, 1)?;
+            self.vm_writer.write_push(VMSegment::Temp, 0)?;
+        }
 
         // This will pop whatever is on top of the stack after compiling the expression into our variable
         self.vm_writer.write_pop(segment, index.unwrap())?;
@@ -523,7 +541,19 @@ impl CompilationEngine {
                     let index = self.tokenizer.get_current_token_value().parse().unwrap();
                     self.vm_writer.write_push(VMSegment::Constant, index)?
                 }
-                TokenType::StringConst => self.check_token(TokenType::StringConst, None, false)?,
+                TokenType::StringConst => {
+                    self.check_token(TokenType::StringConst, None, false)?;
+                    let string_const = self.tokenizer.get_current_token_value();
+                    // Call String.new(length)
+                    self.vm_writer.write_push(VMSegment::Constant, string_const.len() as u32)?;
+                    self.vm_writer.write_call("String.new", 1)?;
+                    // I think this will leave the pointer to string at top of stack
+                    for c in string_const.chars() {
+                        // call String.appendChar 1
+                        self.vm_writer.write_push(VMSegment::Constant, c as u32)?;
+                        self.vm_writer.write_call("String.appendChar", 2)?;
+                    }
+                },
                 TokenType::Keyword => {
                     self.check_token(
                         TokenType::Keyword,
@@ -577,9 +607,15 @@ impl CompilationEngine {
 
         if let Some(t) = self.tokenizer.peek() {
             match t.get_value().as_str() {
-                "[" => {
+                "[" => {    // ARRAY
+                    // The base address of the variable will be on the stack already
                     self.tokenizer.advance()?;
                     self.compile_expression()?;
+
+                    self.vm_writer.write_command("add")?;               // Add result of expression to base address
+                    self.vm_writer.write_pop(VMSegment::Pointer, 1)?;   // Set 'that'
+                    self.vm_writer.write_push(VMSegment::That, 0)?;
+
                     self.check_token(TokenType::Symbol, Some(&["]"]), false)?;
                 }
                 "(" => {
@@ -797,5 +833,21 @@ impl CompilationEngine {
                 self.tokenizer.get_file_name()
             ),
         )
+    }
+}
+
+
+impl Clone for VMSegment {
+    fn clone(&self) -> VMSegment {
+        match self {
+            Self::Argument => VMSegment::Argument,
+            Self::Constant => VMSegment::Constant,
+            Self::Local => VMSegment::Local,
+            Self::Pointer => VMSegment::Pointer,
+            Self::Static => VMSegment::Static,
+            Self::Temp => VMSegment::Temp,
+            Self::This => VMSegment::This,
+            Self::That => VMSegment::That
+        }
     }
 }

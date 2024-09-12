@@ -1,5 +1,6 @@
 use std::fmt;
 
+#[derive(PartialEq, Eq)]
 pub enum SymbolKind {
     // This is according to the nand2tetris book definition
     Static,
@@ -149,18 +150,5 @@ impl Clone for SymbolKind {
             Self::Var => SymbolKind::Var,
             Self::None => SymbolKind::None,
         }
-    }
-}
-
-impl PartialEq for SymbolKind {
-    fn eq(&self, other: &Self) -> bool {
-        matches!(
-            (self, other),
-            (SymbolKind::Arg, SymbolKind::Arg)
-                | (SymbolKind::Var, SymbolKind::Var)
-                | (SymbolKind::Static, SymbolKind::Static)
-                | (SymbolKind::Field, SymbolKind::Field)
-                | (SymbolKind::None, SymbolKind::None)
-        )
     }
 }

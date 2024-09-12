@@ -67,7 +67,6 @@ impl VMWriter {
     }
 
     pub fn write_alloc(&mut self, size: u32) -> Result<(), io::Error> {
-        println!("ALLOCATING: {}", size);
         self.write_push(VMSegment::Constant, size)?;
         self.write_call("Memory.alloc", 1)
     }

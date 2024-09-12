@@ -22,7 +22,7 @@ impl JackCompiler {
     pub fn compile(self) -> Result<(), io::Error> {
         // Loop through each of the source files
         for source_file in self.source_files {
-            println!("=========== Compiling {:?} ===========", source_file);
+            println!("Compiling {:?}", source_file);
             // Initialise a new tokeniser for each source file
             let mut ce = CompilationEngine::new(source_file)?;
             ce.compile_class()?;
