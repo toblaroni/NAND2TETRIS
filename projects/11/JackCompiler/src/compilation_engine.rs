@@ -106,14 +106,14 @@ impl CompilationEngine {
         self.check_type(false)?;
         let sym_type = self.tokenizer.get_current_token_value();
 
-        self.check_symbol(Some(sym_type.clone()), Some(sym_kind.clone()), true)?;
+        self.check_symbol(sym_type.clone(), sym_kind.clone())?;
 
         while self
             .check_token(TokenType::Symbol, Some(&[","]), true)
             .is_ok()
         {
             self.tokenizer.advance()?;
-            self.check_symbol(Some(sym_type.clone()), Some(sym_kind.clone()), true)?;
+            self.check_symbol(sym_type.clone(), sym_kind.clone())?;
         }
 
         self.check_token(TokenType::Symbol, Some(&[";"]), false)?;
@@ -182,7 +182,7 @@ impl CompilationEngine {
         self.tokenizer.advance()?;
         let mut sym_type = self.tokenizer.get_current_token_value();
 
-        self.check_symbol(Some(sym_type), Some(SymbolKind::Arg), true)?;
+        self.check_symbol(sym_type, SymbolKind::Arg)?;
 
         while self
             .check_token(TokenType::Symbol, Some(&[","]), true)
@@ -195,7 +195,7 @@ impl CompilationEngine {
             self.tokenizer.advance()?;
             sym_type = self.tokenizer.get_current_token_value();
 
-            self.check_symbol(Some(sym_type), Some(SymbolKind::Arg), true)?;
+            self.check_symbol(sym_type, SymbolKind::Arg)?;
         }
 
         Ok(())
@@ -240,7 +240,7 @@ impl CompilationEngine {
         self.check_type(false)?;
         let sym_type = self.tokenizer.get_current_token_value();
 
-        self.check_symbol(Some(sym_type.clone()), Some(SymbolKind::Var), true)?;
+        self.check_symbol(sym_type.clone(), SymbolKind::Var)?;
 
         while self
             .check_token(TokenType::Symbol, Some(&[","]), true)
@@ -248,7 +248,7 @@ impl CompilationEngine {
         {
             self.tokenizer.advance()?;
 
-            self.check_symbol(Some(sym_type.clone()), Some(SymbolKind::Var), true)?;
+            self.check_symbol(sym_type.clone(), SymbolKind::Var)?;
         }
 
         self.check_token(TokenType::Symbol, Some(&[";"]), false)?;
@@ -321,7 +321,6 @@ impl CompilationEngine {
             self.vm_writer.write_push(VMSegment::Pointer, 0)?;
             num_args += 1;
             func_name = format!("{}.{}", self.class_name, func_name);
-            // println!("INCREMENTING FOR CLASS_NAME == FUNC_NAME -> {} == {}", class_name, func_name);
         } else if *self.symbol_table.kind_of(&class_name) != SymbolKind::None {
             // <instance>.<subroutine_name>()
             // In this case 'this' is wherever the variable points to...
@@ -338,7 +337,6 @@ impl CompilationEngine {
 
             self.vm_writer.write_push(segment, index.unwrap())?;
 
-            // println!("INCREMENTING NUM_ARGS FOR <INSTANCE>.<SUBROUTINE_NAME>() -> {}", class_name);
             num_args += 1;
         }
 
@@ -759,12 +757,7 @@ impl CompilationEngine {
         Ok(())
     }
 
-    fn check_symbol(
-        &mut self,
-        sym_type: Option<String>,
-        sym_kind: Option<SymbolKind>,
-        being_defined: bool,
-    ) -> Result<(), io::Error> {
+    fn check_symbol(&mut self, sym_type: String, sym_kind: SymbolKind) -> Result<(), io::Error> {
         /*
             This will handle identifiers and emitting them.
             Check for ID, add to symbol table and emit to xml for now...
@@ -785,22 +778,10 @@ impl CompilationEngine {
 
         let sym_name = self.tokenizer.get_current_token_value();
 
-        let (sym_type, sym_kind) = if being_defined {
-            let sym_type =
-                sym_type.ok_or_else(|| self.compilation_error("Symbol type is missing"))?;
-            let sym_kind =
-                sym_kind.ok_or_else(|| self.compilation_error("Symbol kind is missing"))?;
-            self.symbol_table
-                .define(&sym_name, &sym_type, sym_kind.clone());
-            (sym_type, sym_kind)
-        } else {
-            // We need to get the kind and type from the symbol table
-            let sym_type = self.symbol_table.type_of(&sym_name).to_owned();
-            let sym_kind = self.symbol_table.kind_of(&sym_name).clone();
-            (sym_type, sym_kind)
-        };
+        self.symbol_table
+            .define(&sym_name, &sym_type, sym_kind.clone());
 
-        Ok(()) // Maybe should return sym_type and sym_return... we shall see
+        Ok(())
     }
 
     fn check_type(&mut self, next_token: bool) -> Result<(), io::Error> {
