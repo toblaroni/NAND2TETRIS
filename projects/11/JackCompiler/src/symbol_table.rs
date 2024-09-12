@@ -78,10 +78,6 @@ impl SymbolTable {
         }
     }
 
-    pub fn num_class_vars(&self) -> u32 {
-        self.class_symbols.len() as u32
-    }
-
     pub fn kind_of(&self, name: &String) -> &SymbolKind {
         for symbol in self
             .class_symbols

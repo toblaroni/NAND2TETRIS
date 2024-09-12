@@ -133,7 +133,6 @@ impl CompilationEngine {
         // If constructor, insert code that allocates enough space for the class (aka)
         let subroutine_type = self.tokenizer.get_current_token_value();
 
-
         // ('void' | type)
         match self.check_token(TokenType::Keyword, Some(&["void"]), true) {
             Ok(_) => {
@@ -151,6 +150,12 @@ impl CompilationEngine {
         self.check_token(TokenType::Identifier, None, false)?;
         let func_name = self.tokenizer.get_current_token_value();
 
+        if subroutine_type == "method" {
+            // Add this as the first arg
+            self.symbol_table
+                .define("this", &self.class_name, SymbolKind::Arg);
+        }
+
         self.check_token(TokenType::Symbol, Some(&["("]), false)?;
 
         self.compile_param_list()?;
@@ -160,7 +165,7 @@ impl CompilationEngine {
 
         if ret_type == "void" {
             self.vm_writer.write_push(VMSegment::Constant, 0)?;
-        } 
+        }
 
         self.vm_writer.write_command("return")
     }
@@ -196,7 +201,11 @@ impl CompilationEngine {
         Ok(())
     }
 
-    fn compile_subroutine_body(&mut self, func_name: String, subroutine_type: &str) -> Result<(), io::Error> {
+    fn compile_subroutine_body(
+        &mut self,
+        func_name: String,
+        subroutine_type: &str,
+    ) -> Result<(), io::Error> {
         self.check_token(TokenType::Symbol, Some(&["{"]), false)?;
 
         while self
@@ -212,12 +221,9 @@ impl CompilationEngine {
 
         if subroutine_type == "constructor" {
             self.vm_writer
-                .write_alloc(self.symbol_table.num_class_vars())?;
+                .write_alloc(self.symbol_table.sym_count(SymbolKind::Field))?;
             self.vm_writer.write_pop(VMSegment::Pointer, 0)?;
         } else if subroutine_type == "method" {
-            // Add this as the first arg
-            self.symbol_table
-                .define("this", &self.class_name, SymbolKind::Arg);
             // Set pointer 0 to 'this'
             self.vm_writer.write_push(VMSegment::Argument, 0)?;
             self.vm_writer.write_pop(VMSegment::Pointer, 0)?;
@@ -290,16 +296,18 @@ impl CompilationEngine {
             self.tokenizer.advance()?;
             self.check_token(TokenType::Identifier, None, false)?;
 
-            if *self.symbol_table.kind_of(&class_name) != SymbolKind::None {    // We have an instance
+            if *self.symbol_table.kind_of(&class_name) != SymbolKind::None {
+                // We have an instance
                 func_name = format!(
                     "{}.{}",
                     self.symbol_table.type_of(&class_name),
                     self.tokenizer.get_current_token_value()
                 )
             } else {
-                func_name = format!(    // Just a class
+                func_name = format!(
+                    // Just a class
                     "{}.{}",
-                    func_name, 
+                    func_name,
                     self.tokenizer.get_current_token_value()
                 );
             }
@@ -370,12 +378,12 @@ impl CompilationEngine {
             self.tokenizer.advance()?;
 
             // Push the base of the current symbol
-            self.vm_writer.write_push(segment.clone(), index.unwrap())?; 
+            self.vm_writer.write_push(segment.clone(), index.unwrap())?;
 
             self.compile_expression()?;
 
             // Add the result of the expression to the address of the symbol
-            self.vm_writer.write_command("add")?;       // This leaves the address of the indexed element on the stack
+            self.vm_writer.write_command("add")?; // This leaves the address of the indexed element on the stack
 
             segment = VMSegment::That;
             index = Some(0);
@@ -462,7 +470,7 @@ impl CompilationEngine {
 
         self.vm_writer.write_goto(&if_end_label)?;
 
-        self.vm_writer.write_label(&if_false_label)?;   // bit hacky but she works
+        self.vm_writer.write_label(&if_false_label)?; // bit hacky but she works
         if self
             .check_token(TokenType::Keyword, Some(&["else"]), true)
             .is_ok()
@@ -545,7 +553,8 @@ impl CompilationEngine {
                     self.check_token(TokenType::StringConst, None, false)?;
                     let string_const = self.tokenizer.get_current_token_value();
                     // Call String.new(length)
-                    self.vm_writer.write_push(VMSegment::Constant, string_const.len() as u32)?;
+                    self.vm_writer
+                        .write_push(VMSegment::Constant, string_const.len() as u32)?;
                     self.vm_writer.write_call("String.new", 1)?;
                     // I think this will leave the pointer to string at top of stack
                     for c in string_const.chars() {
@@ -553,7 +562,7 @@ impl CompilationEngine {
                         self.vm_writer.write_push(VMSegment::Constant, c as u32)?;
                         self.vm_writer.write_call("String.appendChar", 2)?;
                     }
-                },
+                }
                 TokenType::Keyword => {
                     self.check_token(
                         TokenType::Keyword,
@@ -607,13 +616,14 @@ impl CompilationEngine {
 
         if let Some(t) = self.tokenizer.peek() {
             match t.get_value().as_str() {
-                "[" => {    // ARRAY
+                "[" => {
+                    // ARRAY
                     // The base address of the variable will be on the stack already
                     self.tokenizer.advance()?;
                     self.compile_expression()?;
 
-                    self.vm_writer.write_command("add")?;               // Add result of expression to base address
-                    self.vm_writer.write_pop(VMSegment::Pointer, 1)?;   // Set 'that'
+                    self.vm_writer.write_command("add")?; // Add result of expression to base address
+                    self.vm_writer.write_pop(VMSegment::Pointer, 1)?; // Set 'that'
                     self.vm_writer.write_push(VMSegment::That, 0)?;
 
                     self.check_token(TokenType::Symbol, Some(&["]"]), false)?;
@@ -836,7 +846,6 @@ impl CompilationEngine {
     }
 }
 
-
 impl Clone for VMSegment {
     fn clone(&self) -> VMSegment {
         match self {
@@ -847,7 +856,7 @@ impl Clone for VMSegment {
             Self::Static => VMSegment::Static,
             Self::Temp => VMSegment::Temp,
             Self::This => VMSegment::This,
-            Self::That => VMSegment::That
+            Self::That => VMSegment::That,
         }
     }
 }
