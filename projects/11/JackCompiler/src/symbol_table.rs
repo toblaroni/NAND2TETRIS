@@ -77,8 +77,8 @@ impl SymbolTable {
         }
     }
 
-    pub fn num_class_vars(&self) -> usize {
-        self.class_symbols.len()
+    pub fn num_class_vars(&self) -> u32 {
+        self.class_symbols.len() as u32
     }
 
     pub fn kind_of(&self, name: &String) -> &SymbolKind {
@@ -95,18 +95,18 @@ impl SymbolTable {
         &SymbolKind::None
     }
 
-    pub fn type_of(&self, name: &String) -> &str {
+    pub fn type_of(&self, name: &String) -> String {
         for symbol in self
             .class_symbols
             .iter()
             .chain(self.subroutine_symbols.iter())
         {
             if name == &symbol.name {
-                return &symbol.symType;
+                return symbol.symType.clone();
             }
         }
 
-        "class/subroutine"
+        "class/subroutine".to_string()
     }
 
     pub fn index_of(&self, name: &String) -> Option<u32> {
@@ -163,5 +163,4 @@ impl PartialEq for SymbolKind {
                 | (SymbolKind::None, SymbolKind::None)
         )
     }
-
 }

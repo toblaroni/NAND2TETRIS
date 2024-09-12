@@ -66,17 +66,10 @@ impl VMWriter {
         self.write_command(&format!("function {} {}", label, num_locals))
     }
 
-    pub fn write_alloc(&mut self, size: String) -> Result<(), io::Error> {
-        self.write_commands(&[&format!("push {}", size), "call Memory.alloc"])
-    }
-
-    pub fn write_commands(&mut self, commands: &[&str]) -> Result<(), io::Error> {
-        for command in commands {
-            let command = format!("{}\n", command);
-            self.writer.write_all(command.as_bytes())?;
-        }
-
-        Ok(())
+    pub fn write_alloc(&mut self, size: u32) -> Result<(), io::Error> {
+        println!("ALLOCATING: {}", size);
+        self.write_push(VMSegment::Constant, size)?;
+        self.write_call("Memory.alloc", 1)
     }
 
     pub fn write_command(&mut self, command: &str) -> Result<(), io::Error> {

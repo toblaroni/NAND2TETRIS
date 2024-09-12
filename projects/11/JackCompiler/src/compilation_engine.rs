@@ -132,15 +132,6 @@ impl CompilationEngine {
         // If constructor, insert code that allocates enough space for the class (aka)
         let subroutine_type = self.tokenizer.get_current_token_value();
 
-        if subroutine_type == "constructor" {
-            self.vm_writer
-                .write_alloc(self.symbol_table.num_class_vars().to_string())?;
-            self.vm_writer.write_pop(VMSegment::Pointer, 0)?;
-        } else if subroutine_type == "method" {
-            // Add this as the first arg
-            self.symbol_table
-                .define("this", &self.class_name, SymbolKind::Arg);
-        }
 
         // ('void' | type)
         match self.check_token(TokenType::Keyword, Some(&["void"]), true) {
@@ -164,13 +155,11 @@ impl CompilationEngine {
         self.compile_param_list()?;
         self.check_token(TokenType::Symbol, Some(&[")"]), false)?;
 
-        self.compile_subroutine_body(func_name)?;
+        self.compile_subroutine_body(func_name, &subroutine_type)?;
 
         if ret_type == "void" {
             self.vm_writer.write_push(VMSegment::Constant, 0)?;
-        } else if subroutine_type == "constructor" {
-            self.vm_writer.write_push(VMSegment::Pointer, 0)?; // Return this
-        }
+        } 
 
         self.vm_writer.write_command("return")
     }
@@ -206,7 +195,7 @@ impl CompilationEngine {
         Ok(())
     }
 
-    fn compile_subroutine_body(&mut self, func_name: String) -> Result<(), io::Error> {
+    fn compile_subroutine_body(&mut self, func_name: String, subroutine_type: &str) -> Result<(), io::Error> {
         self.check_token(TokenType::Symbol, Some(&["{"]), false)?;
 
         while self
@@ -219,6 +208,20 @@ impl CompilationEngine {
         let num_locals = self.symbol_table.sym_count(SymbolKind::Var);
         self.vm_writer
             .write_function(&format!("{}.{}", self.class_name, func_name), num_locals)?;
+
+        if subroutine_type == "constructor" {
+            println!("FILE: {}, CLASS VARS: {}", self.class_name, self.symbol_table.num_class_vars());
+            self.vm_writer
+                .write_alloc(self.symbol_table.num_class_vars())?;
+            self.vm_writer.write_pop(VMSegment::Pointer, 0)?;
+        } else if subroutine_type == "method" {
+            // Add this as the first arg
+            self.symbol_table
+                .define("this", &self.class_name, SymbolKind::Arg);
+            // Set pointer 0 to 'this'
+            self.vm_writer.write_push(VMSegment::Argument, 0)?;
+            self.vm_writer.write_pop(VMSegment::Pointer, 0)?;
+        }
 
         self.compile_statements()?;
 
@@ -279,12 +282,27 @@ impl CompilationEngine {
         let mut func_name = self.tokenizer.get_current_token_value();
         let class_name = func_name.clone();
 
-        if self.check_token(TokenType::Symbol, Some(&["."]), true).is_ok() {
+        if self
+            .check_token(TokenType::Symbol, Some(&["."]), true)
+            .is_ok()
+        {
             // .subroutineName
             self.tokenizer.advance()?;
             self.check_token(TokenType::Identifier, None, false)?;
 
-            func_name = format!("{}.{}", func_name, self.tokenizer.get_current_token_value());
+            if *self.symbol_table.kind_of(&class_name) != SymbolKind::None {    // We have an instance
+                func_name = format!(
+                    "{}.{}",
+                    self.symbol_table.type_of(&class_name),
+                    self.tokenizer.get_current_token_value()
+                )
+            } else {
+                func_name = format!(    // Just a class
+                    "{}.{}",
+                    func_name, 
+                    self.tokenizer.get_current_token_value()
+                );
+            }
         }
 
         // Are we calling a method? If so push 'this'
@@ -294,6 +312,7 @@ impl CompilationEngine {
             // <subroutine_name>()  <- This tells us we're just calling a method in the current class
             self.vm_writer.write_push(VMSegment::Pointer, 0)?;
             num_args += 1;
+            func_name = format!("{}.{}", self.class_name, func_name);
             // println!("INCREMENTING FOR CLASS_NAME == FUNC_NAME -> {} == {}", class_name, func_name);
         } else if *self.symbol_table.kind_of(&class_name) != SymbolKind::None {
             // <instance>.<subroutine_name>()
@@ -310,6 +329,7 @@ impl CompilationEngine {
             };
 
             self.vm_writer.write_push(segment, index.unwrap())?;
+
             // println!("INCREMENTING NUM_ARGS FOR <INSTANCE>.<SUBROUTINE_NAME>() -> {}", class_name);
             num_args += 1;
         }
@@ -333,7 +353,10 @@ impl CompilationEngine {
 
         let (sym_kind, index) = self.symbol_table.get_symbol(&sym_name);
 
-        if self.check_token(TokenType::Symbol, Some(&["["]), true).is_ok() {
+        if self
+            .check_token(TokenType::Symbol, Some(&["["]), true)
+            .is_ok()
+        {
             self.tokenizer.advance()?;
 
             self.compile_expression()?;
@@ -421,9 +444,12 @@ impl CompilationEngine {
 
         self.vm_writer.write_goto(&if_end_label)?;
 
-        if self.check_token(TokenType::Keyword, Some(&["else"]), true).is_ok() {
+        self.vm_writer.write_label(&if_false_label)?;   // bit hacky but she works
+        if self
+            .check_token(TokenType::Keyword, Some(&["else"]), true)
+            .is_ok()
+        {
             // If false
-            self.vm_writer.write_label(&if_false_label)?;
 
             self.tokenizer.advance()?;
             self.check_token(TokenType::Symbol, Some(&["{"]), false)?;
@@ -530,6 +556,8 @@ impl CompilationEngine {
 
         let sym_name = self.tokenizer.get_current_token_value();
         let sym_kind = self.symbol_table.kind_of(&sym_name);
+        let sym_type = self.symbol_table.type_of(&sym_name);
+
         // If it's a symbol we can push to stack
         if *sym_kind != SymbolKind::None {
             let index = self.symbol_table.index_of(&sym_name).unwrap();
@@ -541,8 +569,6 @@ impl CompilationEngine {
                 SymbolKind::Field => {
                     // 1. Point 'this' segment to the current object (pointer 0)
                     // Then use this <index>
-                    self.vm_writer.write_push(VMSegment::Argument, 0)?;
-                    self.vm_writer.write_pop(VMSegment::Pointer, 0)?;
                     self.vm_writer.write_push(VMSegment::This, index)?;
                 }
                 SymbolKind::None => {} // Subroutine or class
@@ -574,6 +600,8 @@ impl CompilationEngine {
                     self.check_token(TokenType::Identifier, None, false)?;
                     let subroutine_name = self.tokenizer.get_current_token_value();
 
+                    let mut label = format!("{}.{}", sym_name, subroutine_name);
+
                     // If the sym_name is in symbol table, we are calling a method of an instance
                     // Therefore we need to push 'this'
                     let mut num_args = 0;
@@ -591,14 +619,15 @@ impl CompilationEngine {
                         };
 
                         self.vm_writer.write_push(segment, index.unwrap())?;
+
+                        label = format!("{}.{}", sym_type, subroutine_name);
+
                         num_args += 1;
                     };
 
                     self.check_token(TokenType::Symbol, Some(&["("]), false)?;
                     num_args += self.compile_expression_list()?;
                     self.check_token(TokenType::Symbol, Some(&[")"]), false)?;
-
-                    let label = format!("{}.{}", sym_name, subroutine_name);
 
                     self.vm_writer.write_call(&label, num_args)?;
                 }

@@ -22,7 +22,7 @@ fn main() -> std::io::Result<()> {
     let c = jack_compiler::JackCompiler::new(input)?;
 
     match c.compile() {
-        Ok(_) => println!("Analyzing finished successfully"),
+        Ok(_) => println!("Successfully compiled all source files."),
         Err(e) => {
             eprintln!("Error occurred while analyzing source: {}", e);
         }
