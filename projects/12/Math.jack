@@ -15,6 +15,7 @@ class Math {
 
     // Initializes the Math library.
     function void init() {
+        let powersOfTwo = Array.new(
     }
 
     /** Returns the product of x and y. 
@@ -41,15 +42,27 @@ class Math {
     /** Returns the greater value.
     */
     function int max(int a, int b) {
+        if (a > b) {
+            return a;
+        }
+        return b;
     }
 
     /** Returns the smaller value.
     */
     function int min(int a, int b) {
+        if (a < b) {
+            return a;
+        }
+        return b;
     }
 
     /** Returns the absolute value of x
     */
     function int abs(int x) {
+        if (x < 0) }
+            return x * -1;
+        }
+        return x;
     }
 }
