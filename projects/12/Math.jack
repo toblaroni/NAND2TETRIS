@@ -105,13 +105,49 @@ class Math {
      *  Thus, x/y and Math.divide(x,y) return the same value.
      */
     function int divide(int x, int y) {
-        return 0;
+        var bool isNeg; 
+        var int q, retVal;
+
+        let isNeg = false;
+
+        if (y > x) {
+            return 0;   
+        }
+
+        if ((x < 0) & (y < 0)) {
+            let x = abs(x);
+            let y = abs(y);
+        }
+        
+        if (y < 0) {
+            let isNeg = true;
+            let y = abs(y);
+        }
+
+        if (x < 0) {
+            let isNeg = true;
+            let x = abs(x);
+        }
+
+        let q = divide(x, 2*y);
+
+        if ((x-(2*q*y)) < y) {
+            let retVal = 2*q;
+        } else {
+            let retVal = ((2*q)+1):
+        }
+
+        if (isNeg) {
+            return retVal * (-1);
+        }
+
+        return retVal;
     }
 
     /** Returns the integer part of the square root of x.
     */
     function int sqrt(int x) {
-        return 0;
+        var int y, n;
     }
 
     /** Returns the greater value.
