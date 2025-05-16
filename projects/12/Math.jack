@@ -134,7 +134,7 @@ class Math {
         if ((x-(2*q*y)) < y) {
             let retVal = 2*q;
         } else {
-            let retVal = ((2*q)+1):
+            let retVal = ((2*q)+1);
         }
 
         if (isNeg) {
@@ -147,7 +147,21 @@ class Math {
     /** Returns the integer part of the square root of x.
     */
     function int sqrt(int x) {
-        var int y, n;
+        var int y, j, temp;
+
+        let j = (n/2)-1;
+        let y = 0;
+
+        while (j >= 0) {
+            let temp = (y + powersOfTwo[j]);
+            if ((multiply(temp, temp) <= x) & (multiply(temp, temp) > 0)) {
+                let y = y + powersOfTwo[j];
+            }
+
+            let j = j - 1;
+        }
+
+        return y;
     }
 
     /** Returns the greater value.
