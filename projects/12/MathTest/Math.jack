@@ -24,7 +24,7 @@ class Math {
         let currentPower = 1;
         let i = 0;
 
-        while (~(i = n)) {
+        while (i < (n+1)) {
             let powersOfTwo[i] = currentPower;
             let currentPower = currentPower * 2;
             let i = i + 1;
@@ -48,9 +48,8 @@ class Math {
      *
      */
     function int numBits(int b) {
-        var int n, i;
+        var int i;
 
-        let n = 16;
         let i = 0;
 
         while (i < n) {
@@ -152,9 +151,11 @@ class Math {
         let j = (n/2)-1;
         let y = 0;
 
-        while (j >= 0) {
-            let temp = (y + powersOfTwo[j]);
-            if ((multiply(temp, temp) <= x) & (multiply(temp, temp) > 0)) {
+        while (j > (-1)) {
+            let temp = y + powersOfTwo[j];
+            if (((temp * temp) < (x+1)) & 
+                ((temp * temp) > 0)) {
+
                 let y = y + powersOfTwo[j];
             }
 

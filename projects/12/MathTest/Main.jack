@@ -12,6 +12,8 @@ class Main {
         let r = 8000;   // Base address
     
         let r[0] = 2 * 3;                  // 6
+
+        /*
         let r[1] = r[0] * (-30);           // 6 * (-30) = -180
         let r[2] = r[1] * 100;             // (-180) * 100 = -18000
         let r[3] = 1 * r[2];               // 1 * (-18000) = -18000
@@ -28,6 +30,8 @@ class Main {
         let r[11] = Math.max(123, -345);   // 123
         let r[12] = Math.abs(27);          // 27
         let r[13] = Math.abs(-32767);      // 32767
+
+        */
         
         return;
     }
