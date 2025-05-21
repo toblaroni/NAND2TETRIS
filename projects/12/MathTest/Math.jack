@@ -15,20 +15,10 @@ class Math {
 
     // Initializes the Math library.
     function void init() {
-        var int i;
-        var int currentPower;
-        
         let n = 16; 
         let powersOfTwo = Array.new(n);
 
-        let currentPower = 1;
-        let i = 0;
 
-        while (i < n) {
-            let powersOfTwo[i] = currentPower;
-            let currentPower = currentPower * 2;
-            let i = i + 1;
-        }
         return;
     }
 
@@ -37,10 +27,14 @@ class Math {
 
         let andResult = x & powersOfTwo[j];
 
+        return powersOfTwo[j];
+
+        /*
         if (andResult = 0) {
             return 0;
         }
         return 1; 
+        */
     }
 
     /** Returns the number of bits in b
@@ -89,6 +83,7 @@ class Math {
 
         return numBits;
 
+        /*
         while (j < numBits) {
             if (Math.bit(y, j) = 1) {
                 let sum = sum + shiftedX;
@@ -98,6 +93,7 @@ class Math {
         }
 
         return sum;
+        */
     }
 
     /** Returns the integer part of x / y.
