@@ -11,26 +11,8 @@ class Main {
         var Array r;    // Stores the test results;  
         let r = 8000;   // Base address
     
-        //let r[0] = 2 * 3;                  // 6
-        let r[0] = Math.bit(4, 0);
-        let r[1] = Math.bit(4, 1);
-        let r[2] = Math.bit(4, 2);
-        let r[3] = Math.bit(4, 3);
-        let r[4] = Math.bit(4, 4);
-        let r[5] = Math.bit(4, 5);
-        let r[6] = Math.bit(4, 6);
-        let r[7] = Math.bit(4, 7);
-        let r[8] = Math.bit(4, 8);
-        let r[9] = Math.bit(4, 9);
-        let r[10] = Math.bit(4, 10);
-        let r[11] = Math.bit(4, 11);
-        let r[12] = Math.bit(4, 12);
-        let r[13] = Math.bit(4, 13);
-        let r[14] = Math.bit(4, 14);
-        let r[15] = Math.bit(4, 15);
-        return;
+        let r[0] = 2 * 4;                  // 6
 
-        /*
         let r[1] = r[0] * (-30);           // 6 * (-30) = -180
         let r[2] = r[1] * 100;             // (-180) * 100 = -18000
         let r[3] = 1 * r[2];               // 1 * (-18000) = -18000
@@ -49,6 +31,6 @@ class Main {
         let r[13] = Math.abs(-32767);      // 32767
 
         return;
-        */
+
     }
 }
