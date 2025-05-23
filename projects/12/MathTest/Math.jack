@@ -37,15 +37,8 @@ class Math {
         return;
     }
 
-    function int bit(int x, int j) {
-        var int andResult;
-
-        let andResult = x & powersOfTwo[j];
-
-        if (andResult = 0) {
-            return 0;
-        }
-        return 1; 
+    function boolean bit(int x, int j) {
+        return ~((x & powersOfTwo[j]) = 0);
     }
 
 
@@ -66,14 +59,15 @@ class Math {
         let j = 0;
 
         while (j < n) {
-            if (Math.bit(y, j) = 1) {
+            if (Math.bit(y, j)) {
                 let sum = sum + shiftedX;
             }
             let j = j + 1;
             let shiftedX = shiftedX + shiftedX;     // Shift 1-bit to the left
         }
 
-        return sum;
+        //return sum;
+        return Math.bit(2, 0);
     }
 
     /** Returns the integer part of x / y.
@@ -87,6 +81,7 @@ class Math {
 
         let isNeg = ~((x < 0) = (y < 0));
 
+
         let x = Math.abs(x);
         let y = Math.abs(y);
 
@@ -94,7 +89,7 @@ class Math {
         
         let q = Math.divide(x, y+y);
 
-        if (x - (2 * q * y) < y) {
+        if ((x - (2 * q * y)) < y) {
             let retVal = q + q;
         } else {
             let retVal = q + q + 1;
@@ -115,8 +110,8 @@ class Math {
 
         while (j > (-1)) {
             let temp = y + powersOfTwo[j];
-            if (((temp * temp) < (x+1)) & 
-                ((temp * temp) > 0)) {
+            if ((temp * temp < x+1) & 
+                (temp * temp > 0)) {
 
                 let y = y + powersOfTwo[j];
             }
