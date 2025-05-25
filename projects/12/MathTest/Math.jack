@@ -18,6 +18,7 @@ class Math {
         let n = 16; 
         let powersOfTwo = Array.new(n);
 
+        let powersOfTwo[0] = 1;
         let powersOfTwo[1] = 2;
         let powersOfTwo[2] = 4;
         let powersOfTwo[3] = 8;
@@ -66,8 +67,7 @@ class Math {
             let shiftedX = shiftedX + shiftedX;     // Shift 1-bit to the left
         }
 
-        //return sum;
-        return Math.bit(2, 0);
+        return sum;
     }
 
     /** Returns the integer part of x / y.
@@ -103,17 +103,16 @@ class Math {
     /** Returns the integer part of the square root of x.
     */
     function int sqrt(int x) {
-        var int y, j, temp;
+        var int y, j, temp, temp_sqrd;
 
         let j = (n/2)-1;
         let y = 0;
 
         while (j > (-1)) {
             let temp = y + powersOfTwo[j];
-            if ((temp * temp < x+1) & 
-                (temp * temp > 0)) {
-
-                let y = y + powersOfTwo[j];
+            let temp_sqrd = temp*temp;
+            if ( (temp_sqrd < (x+1)) & (temp_sqrd > 0) ) {
+                let y = temp;
             }
 
             let j = j - 1;
