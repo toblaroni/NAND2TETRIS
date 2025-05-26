@@ -108,10 +108,10 @@ class Math {
         let j = (n/2)-1;
         let y = 0;
 
-        while (j > (-1)) {
+        while (~(j < 0) ) {
             let temp = y + powersOfTwo[j];
-            let temp_sqrd = temp*temp;
-            if ( (temp_sqrd < (x+1)) & (temp_sqrd > 0) ) {
+            let temp_sqrd = temp * temp;
+            if ( ~(temp_sqrd > x) & (temp_sqrd > 0) ) {
                 let y = temp;
             }
 

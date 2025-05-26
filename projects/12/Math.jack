@@ -15,53 +15,33 @@ class Math {
 
     // Initializes the Math library.
     function void init() {
-        var int i;
-        var int currentPower;
-        
         let n = 16; 
         let powersOfTwo = Array.new(n);
 
-        let currentPower = 1;
-        let i = 0;
+        let powersOfTwo[0] = 1;
+        let powersOfTwo[1] = 2;
+        let powersOfTwo[2] = 4;
+        let powersOfTwo[3] = 8;
+        let powersOfTwo[4] = 16;
+        let powersOfTwo[5] = 32;
+        let powersOfTwo[6] = 64;
+        let powersOfTwo[7] = 128;
+        let powersOfTwo[8] = 256;
+        let powersOfTwo[9] = 512;
+        let powersOfTwo[10] = 1024;
+        let powersOfTwo[11] = 2048;
+        let powersOfTwo[12] = 4096;
+        let powersOfTwo[13] = 8192;
+        let powersOfTwo[14] = 16384;
+        let powersOfTwo[15] = 16384 + 16384;
 
-        while ~(i = n) {
-            let powersOfTwo[i] = currentPower;
-            let currentPower = currentPower * 2;
-            let i = i + 1;
-        }
         return;
     }
 
-    function int bit(int x, int j) {
-        var int andResult;
-
-        let andResult = x & powersOfTwo[j];
-
-        if (andResult = 0) {
-            return 0;
-        }
-        return 1; 
+    function boolean bit(int x, int j) {
+        return ~((x & powersOfTwo[j]) = 0);
     }
 
-    /** Returns the number of bits in b
-     *  Starts at leftmost bit and loops until a 1 is found.
-     *
-     */
-    function int numBits(int b) {
-        var int n, i;
-
-        let n = 16;
-        let i = 0;
-
-        while (i < n) {
-            if (bit(b, n-i) = 1) {
-                return n-i;
-            }
-            let i = i + 1;
-        }
-
-        return 0;
-    }
 
     /** Returns the product of x and y. 
      *  When a Jack compiler detects the multiplication operator '*'
@@ -69,27 +49,18 @@ class Math {
      *  Thus, in Jack, x * y and Math.multiply(x,y) return the same value.
      */
     function int multiply(int x, int y) {
-        var int sum, shiftedX, j, n;
+        var int sum, shiftedX, j, numBits;
 
-        if ((x = 0) | (y = 0)) {
-            return 0;
-        }
-
-        if (x = 1) {
-            return y;
-        }
-
-        if (y = 1) {
-            return x;
-        }
+        if ((x = 0) | (y = 0)) { return 0; }
+        if (x = 1) { return y; }
+        if (y = 1) { return x; }
         
         let sum = 0;
         let shiftedX = x;
         let j = 0;
-        let n = numBits(y);
 
         while (j < n) {
-            if (bit(y, j) = 1) {
+            if (Math.bit(y, j)) {
                 let sum = sum + shiftedX;
             }
             let j = j + 1;
@@ -108,38 +79,23 @@ class Math {
         var bool isNeg; 
         var int q, retVal;
 
-        let isNeg = false;
+        let isNeg = ~((x < 0) = (y < 0));
 
-        if (y > x) {
-            return 0;   
-        }
 
-        if ((x < 0) & (y < 0)) {
-            let x = abs(x);
-            let y = abs(y);
-        }
+        let x = Math.abs(x);
+        let y = Math.abs(y);
+
+        if (y > x) { return 0; }
         
-        if (y < 0) {
-            let isNeg = true;
-            let y = abs(y);
-        }
+        let q = Math.divide(x, y+y);
 
-        if (x < 0) {
-            let isNeg = true;
-            let x = abs(x);
-        }
-
-        let q = divide(x, 2*y);
-
-        if ((x-(2*q*y)) < y) {
-            let retVal = 2*q;
+        if ((x - (2 * q * y)) < y) {
+            let retVal = q + q;
         } else {
-            let retVal = ((2*q)+1);
+            let retVal = q + q + 1;
         }
 
-        if (isNeg) {
-            return retVal * (-1);
-        }
+        if (isNeg) { return -retVal; }
 
         return retVal;
     }
@@ -147,15 +103,16 @@ class Math {
     /** Returns the integer part of the square root of x.
     */
     function int sqrt(int x) {
-        var int y, j, temp;
+        var int y, j, temp, temp_sqrd;
 
         let j = (n/2)-1;
         let y = 0;
 
-        while (j >= 0) {
-            let temp = (y + powersOfTwo[j]);
-            if ((multiply(temp, temp) <= x) & (multiply(temp, temp) > 0)) {
-                let y = y + powersOfTwo[j];
+        while (~(j < 0) ) {
+            let temp = y + powersOfTwo[j];
+            let temp_sqrd = temp * temp;
+            if ( ~(temp_sqrd > x) & (temp_sqrd > 0) ) {
+                let y = temp;
             }
 
             let j = j - 1;
@@ -186,7 +143,7 @@ class Math {
     */
     function int abs(int x) {
         if (x < 0) {
-            let x = x * -1;
+            return x*(-1);
         }
         return x;
     }
