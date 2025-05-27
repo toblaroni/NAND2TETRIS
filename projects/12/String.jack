@@ -11,6 +11,7 @@
  * string-oriented operations.
  */
 class String {
+    
 
     /** constructs a new empty string with a maximum length of maxLength
      *  and initial length of 0. */

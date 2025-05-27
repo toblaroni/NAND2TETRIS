@@ -79,8 +79,11 @@ class Math {
         var bool isNeg; 
         var int q, retVal;
 
+        if (y = 0) {
+            do Sys.error(3);   // Div by zero error
+        }
+        
         let isNeg = ~((x < 0) = (y < 0));
-
 
         let x = Math.abs(x);
         let y = Math.abs(y);
@@ -104,6 +107,10 @@ class Math {
     */
     function int sqrt(int x) {
         var int y, j, temp, temp_sqrd;
+
+        if (x < 0) {
+            do Sys.error(4);
+        }
 
         let j = (n/2)-1;
         let y = 0;
