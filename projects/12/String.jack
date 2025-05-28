@@ -11,35 +11,48 @@
  * string-oriented operations.
  */
 class String {
-    
+    static Array char_array;    
+    static int length;
 
     /** constructs a new empty string with a maximum length of maxLength
      *  and initial length of 0. */
     constructor String new(int maxLength) {
+        if (maxLength < 0) { Sys.error(14); }
+
+        let char_array = Array.new(maxLength);
+        let length = 0;
     }
 
     /** Disposes this string. */
     method void dispose() {
+        Memory.deAlloc(char_array);
     }
 
     /** Returns the current length of this string. */
     method int length() {
+        return length;
     }
 
     /** Returns the character at the j-th location of this string. */
     method char charAt(int j) {
+        if (j > (length-1)) { Sys.error(15); }
+        return 
     }
 
     /** Sets the character at the j-th location of this string to c. */
     method void setCharAt(int j, char c) {
+        if (j > (length-1)) { Sys.error(16); }
     }
 
     /** Appends c to this string's end and returns this string. */
     method String appendChar(char c) {
+        if (length == maxLength) { Sys.error(17); }
     }
 
     /** Erases the last character from this string. */
     method void eraseLastChar() {
+        if (length == 0) { Sys.error(18); }
+
     }
 
     /** Returns the integer value of this string, 
