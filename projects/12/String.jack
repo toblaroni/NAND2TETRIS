@@ -13,6 +13,7 @@
 class String {
     static Array char_array;    
     static int length;
+    static int maxLength;
 
     /** constructs a new empty string with a maximum length of maxLength
      *  and initial length of 0. */
@@ -21,11 +22,12 @@ class String {
 
         let char_array = Array.new(maxLength);
         let length = 0;
+        let maxLength = maxLength;
     }
 
     /** Disposes this string. */
     method void dispose() {
-        Memory.deAlloc(char_array);
+        do Memory.deAlloc(char_array);
     }
 
     /** Returns the current length of this string. */
@@ -36,32 +38,44 @@ class String {
     /** Returns the character at the j-th location of this string. */
     method char charAt(int j) {
         if (j > (length-1)) { Sys.error(15); }
-        return 
+        return char_array[j];
     }
 
     /** Sets the character at the j-th location of this string to c. */
     method void setCharAt(int j, char c) {
         if (j > (length-1)) { Sys.error(16); }
+        let char_array[j] = c;
+        return;
     }
 
     /** Appends c to this string's end and returns this string. */
     method String appendChar(char c) {
         if (length == maxLength) { Sys.error(17); }
+        let char_array[length] = c;
+        let length = length + 1;
+        return this;
     }
 
     /** Erases the last character from this string. */
     method void eraseLastChar() {
         if (length == 0) { Sys.error(18); }
-
+        let length = length - 1;
     }
 
     /** Returns the integer value of this string, 
      *  until a non-digit character is detected. */
     method int intValue() {
+        if (length == 0) { return 0; }
+        
+        var int v, i;
+
+        let v = 0;
+
     }
 
     /** Sets this string to hold a representation of the given value. */
     method void setInt(int val) {
+           
     }
 
     /** Returns the new line character. */
