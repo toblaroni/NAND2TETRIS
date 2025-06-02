@@ -94,18 +94,20 @@ class String {
     method void setInt(int val) {
         var char c;
         var int last_digit;
+        // Create temp stack to hold all chars
 
         let length = 0;     // Clear the string
 
-        let last_digit = (val - ((val / 10) * 10));   // val % 10
-        let c = (last_digit + 48);
-
-        if (val < 10) {
-            do appendChar(c);
-        } else {
-            do setInt((val/10));
-            do appendChar(c);
+        if (val < 0) {
+            String.appendChar(45);  // '-'
+            let val = Math.abs(val);
         }
+
+        while (
+
+        let last_digit = (val - ((val / 10) * 10));   // val % 10
+        let c = (last_digit + 48);  // Convert to ASCII
+
 
         return;
     }
