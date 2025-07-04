@@ -20,11 +20,11 @@ class String {
     constructor String new(int aMaxLength) {
         if (aMaxLength < 0) { do Sys.error(14); }
         if (aMaxLength = 0) {
-            let aMaxLength = 2;
+            let aMaxLength = 1;
         }
 
         let maxLength = aMaxLength;
-        let char_array = Array.new(100);
+        let char_array = Array.new(maxLength);
         let length = 0;
 
         return this;
