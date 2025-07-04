@@ -20,10 +20,11 @@ class Main {
         let s = s.appendChar(99);
         let s = s.appendChar(100);
         let s = s.appendChar(101);
+
         do Output.printString("new,appendChar: ");
         do Output.printString(s);                // new, appendChar: abcde
         do Output.println();
-    
+        
         let i = String.new(6);
         do i.setInt(12345);
         do Output.printString("setInt: ");

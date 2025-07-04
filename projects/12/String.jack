@@ -11,25 +11,28 @@
  * string-oriented operations.
  */
 class String {
-    static Array char_array;    
-    static int length;
-    static int maxLength;
+    field Array char_array;    
+    field int length;
+    field int maxLength;
 
     /** constructs a new empty string with a maximum length of maxLength
      *  and initial length of 0. */
-    constructor String new(int maxLength) {
-        if (maxLength < 0) { do Sys.error(14); }
+    constructor String new(int aMaxLength) {
+        if (aMaxLength < 0) { do Sys.error(14); }
+        if (aMaxLength = 0) {
+            let aMaxLength = 2;
+        }
 
-        let char_array = Array.new(maxLength);
+        let maxLength = aMaxLength;
+        let char_array = Array.new(100);
         let length = 0;
-        let maxLength = maxLength;
 
         return this;
     }
 
     /** Disposes this string. */
     method void dispose() {
-        do Memory.deAlloc(char_array);
+        do Array.dispose(char_array);
         return;
     }
 
@@ -41,6 +44,7 @@ class String {
     /** Returns the character at the j-th location of this string. */
     method char charAt(int j) {
         if (j > (length-1)) { do Sys.error(15); }
+
         return char_array[j];
     }
 
@@ -93,23 +97,38 @@ class String {
     /** Sets this string to hold a representation of the given value. */
     method void setInt(int val) {
         var char c;
-        var int last_digit;
-        // Create temp stack to hold all chars
+        var int divisor, digit, temp;
+        
+        let length = 0; // Clear the string
 
-        let length = 0;     // Clear the string
-
+        if (val = 0) {
+            do appendChar(48);
+            return;
+        }
+    
         if (val < 0) {
-            String.appendChar(45);  // '-'
+            do appendChar(45);  // '-'
             let val = Math.abs(val);
         }
 
-        while (
+        // Find highest divisor
+        let divisor = 1;
+        let temp = val;
+        while (temp > 9) {
+            let divisor = (divisor * 10);
+            let temp = (temp / 10);
+        }
 
-        let last_digit = (val - ((val / 10) * 10));   // val % 10
-        let c = (last_digit + 48);  // Convert to ASCII
-
+        while (divisor > 0) {
+            let digit = val / divisor;
+            let c = (digit + 48);  // Convert to ASCII
+            do appendChar(c);
+            let val = val - (digit * divisor);
+            let divisor = (divisor / 10);
+        }
 
         return;
+
     }
 
     /** Returns the new line character. */
@@ -127,3 +146,4 @@ class String {
         return 34;
     }
 }
+
